@@ -9,7 +9,7 @@ This file is the source of truth. If a decision is not covered here, choose the 
 ## 1. Principles
 
 1. **The body map is the primary object.** Every screen shows it, leads to it, or reflects on it. Nothing competes with it visually.
-2. **A part is a single small mark.** No faces, characters, avatars, or illustrated figures. Location and spread carry the meaning.
+2. **A part is a character; on the body map it is placed as a mark.** A part has its own visual identity (name, colour, and character representation) that lives on the dashboard and part page. Where a part is *located in the body*, location and spread carry the meaning, so on the body map it is rendered as a mark — the character is not drawn onto the silhouette.
 3. **Restraint reads as safety.** Low stimulation. No motion without a tap. No progress bars, streaks, scores, or badges.
 4. **Color is meaning, never decoration.** If something is colored, it is a part. Everything else is greyed sage.
 5. **The user can always stop.** Every flow has a visible, equally weighted way out. "Not now" is never smaller than the primary action.
@@ -143,7 +143,12 @@ Soft and invitational. Plain language over clinical language. "A part of you" ra
 
 ## 8. Imagery
 
-- No illustration of people, faces, hands, or emotion.
+- **Parts are the one exception:** a part may have a character representation (its
+  visual identity) shown on the dashboard and part page. It is the user's part, so
+  its look is user-directed, not a generic stock avatar. It never appears on the body
+  map (marks only there) and never on the check-in.
+- No *other* illustration of people, faces, hands, or emotion. Imagery that is not a
+  part stays absent.
 - Photography, if used at all, is out-of-focus natural texture at low contrast, full-bleed, with nothing layered on top.
 - Icons are 1.5px stroke, square-cornered, limited to navigation. Never decorative, never inside body copy.
 
@@ -168,6 +173,6 @@ Fast check before shipping a screen.
 - No second saturated color.
 - No spinners, progress bars, streaks, scores, badges.
 - No motion that was not started by a tap.
-- No faces, avatars, or emotion illustration.
+- No faces, avatars, or emotion illustration — *except a part's own character on the dashboard/part page.*
 - No two display lines on one screen.
 - No primary action without an equally weighted way out.
