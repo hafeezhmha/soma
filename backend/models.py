@@ -18,6 +18,7 @@ class Stage(str, Enum):
     REFLECTION = "REFLECTION"
     SAFETY = "SAFETY"
     COMPLETE = "COMPLETE"
+    EXPIRED = "EXPIRED"
 
 
 class UIAction(BaseModel):

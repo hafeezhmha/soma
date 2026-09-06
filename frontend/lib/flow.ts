@@ -1,5 +1,8 @@
 import { Mark, Stage } from './types';
 
+export const isBodyStage = (stage: Stage): boolean => ['locate', 'sensation', 'intensity'].includes(stage);
+export const requiresLeaveConfirmation = (stage: Stage, hasSession: boolean): boolean => hasSession && !['landing', 'summary', 'dashboard', 'part'].includes(stage);
+
 export const stageAfter = (stage: Stage): Stage => {
   const next: Partial<Record<Stage, Stage>> = {
     landing: 'locate',

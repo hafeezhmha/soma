@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+from contextlib import asynccontextmanager, suppress
 import os
 import secrets
 import uuid
@@ -10,6 +12,7 @@ from typing import Any
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from starlette.concurrency import run_in_threadpool
 
 from backend.agent.orchestrator import Orchestrator
 from backend.agent.state_machine import can_transition
@@ -38,6 +41,20 @@ def _origins() -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def _client_key(request: Request) -> str:
+    """Identify a visitor for the lightweight onboarding limiter.
+
+    Forwarded headers are trusted only when the deployment explicitly opts in;
+    otherwise a client cannot spoof a different address by sending a header.
+    Configure the HTTPS proxy to overwrite X-Forwarded-For before enabling it.
+    """
+    if os.getenv("TRUST_PROXY_HEADERS", "false").lower() in {"1", "true", "yes"}:
+        forwarded = request.headers.get("x-forwarded-for", "").split(",", 1)[0].strip()
+        if forwarded:
+            return forwarded
+    return request.client.host if request.client else "unknown"
+
+
 def _profile_from_request(request: Request, body_token: str | None = None) -> str:
     token = body_token or request.headers.get("X-Profile-Token")
     auth = request.headers.get("Authorization", "")
@@ -52,10 +69,18 @@ def _profile_from_request(request: Request, body_token: str | None = None) -> st
     return str(row["id"])
 
 
-def _session(request: Request, session_id: str, profile_id: str | None = None):
+def _session(
+    request: Request,
+    session_id: str,
+    profile_id: str | None = None,
+    *,
+    allow_expired: bool = False,
+):
     row = request.app.state.db.one("SELECT * FROM sessions WHERE id = ?", (session_id,))
     if not row or (profile_id is not None and row["profile_id"] != profile_id):
         raise HTTPException(404, "Session not found")
+    if row["stage"] == Stage.EXPIRED.value and not allow_expired:
+        raise HTTPException(410, "This session has expired and its transcript was removed")
     return row
 
 
@@ -82,8 +107,26 @@ def _session_payload(request: Request, row: Any) -> dict[str, Any]:
     }
 
 
-def _record_message(db: Database, session_id: str, role: str, text: str) -> None:
-    db.execute("INSERT INTO messages (id, session_id, role, text, created_at) VALUES (?, ?, ?, ?, ?)", (_id(), session_id, role, text, now_iso()))
+def _record_message(db: Database, session_id: str, role: str, text: str) -> str:
+    message_id = _id()
+    db.execute("INSERT INTO messages (id, session_id, role, text, created_at) VALUES (?, ?, ?, ?, ?)", (message_id, session_id, role, text, now_iso()))
+    return message_id
+
+
+def _conversation_history(
+    db: Database, session_id: str, current_message_id: str, *, max_messages: int = 12, max_chars: int = 24000
+) -> list[dict[str, str]]:
+    """Return only recent prior messages belonging to this session."""
+    rows = db.all(
+        """SELECT role, text, created_at FROM messages
+           WHERE session_id = ? AND id <> ?
+           ORDER BY created_at DESC, rowid DESC LIMIT ?""",
+        (session_id, current_message_id, max_messages),
+    )
+    history = [dict(row) for row in reversed(rows)]
+    while len(history) > 1 and sum(len(item["text"]) for item in history) > max_chars:
+        history.pop(0)
+    return history
 
 
 def _safety_interruption(db: Database, session_id: str, text: str) -> AgentResponse | None:
@@ -119,9 +162,27 @@ def _default_orchestrator() -> Orchestrator:
 
 
 def create_app(database: Database | None = None, orchestrator: Orchestrator | None = None) -> FastAPI:
-    app = FastAPI(title="SOMA API", version="0.1.0")
-    app.state.db = database or Database()
-    app.state.db.initialize()
+    db = database or Database()
+    db.initialize()
+
+    async def cleanup_loop() -> None:
+        while True:
+            await asyncio.sleep(60)
+            db.cleanup_expired_sessions()
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        db.cleanup_expired_sessions()
+        task = asyncio.create_task(cleanup_loop())
+        try:
+            yield
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+
+    app = FastAPI(title="SOMA API", version="0.1.0", lifespan=lifespan)
+    app.state.db = db
     app.state.orchestrator = orchestrator or _default_orchestrator()
     app.state.speech = ElevenLabsService(os.getenv("ELEVENLABS_API_KEY"), os.getenv("ELEVENLABS_VOICE_ID"), base_url=os.getenv("ELEVENLABS_BASE_URL", "https://api.elevenlabs.io"))
     app.state.profile_limiter = RateLimiter(limit=10, window_seconds=3600)
@@ -134,7 +195,7 @@ def create_app(database: Database | None = None, orchestrator: Orchestrator | No
 
     @app.post("/profiles", response_model=ProfileResponse, status_code=201)
     def create_profile(request: Request) -> ProfileResponse:
-        client_key = request.client.host if request.client else "unknown"
+        client_key = _client_key(request)
         if not app.state.profile_limiter.allow(client_key):
             raise HTTPException(429, "Too many profiles created. Try again later")
         token = new_profile_token()
@@ -176,12 +237,12 @@ def create_app(database: Database | None = None, orchestrator: Orchestrator | No
     @app.get("/sessions/{session_id}")
     def get_session(request: Request, session_id: str) -> dict[str, Any]:
         profile_id = _profile_from_request(request)
-        return _session_payload(request, _session(request, session_id, profile_id))
+        return _session_payload(request, _session(request, session_id, profile_id, allow_expired=True))
 
     @app.delete("/sessions/{session_id}")
     def cancel_session(request: Request, session_id: str) -> dict[str, bool]:
         profile_id = _profile_from_request(request)
-        _session(request, session_id, profile_id)
+        _session(request, session_id, profile_id, allow_expired=True)
         app.state.db.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
         return {"deleted": True}
 
@@ -192,9 +253,11 @@ def create_app(database: Database | None = None, orchestrator: Orchestrator | No
         if row["stage"] in (Stage.COMPLETE.value, Stage.SAFETY.value):
             raise HTTPException(409, "This session is no longer accepting messages")
         db: Database = app.state.db
-        _record_message(db, session_id, "user", payload.text)
+        current_message_id = _record_message(db, session_id, "user", payload.text)
         old_stage = Stage(row["stage"])
-        result = app.state.orchestrator.respond(text=payload.text, stage=old_stage, state=_state(row))
+        state = _state(row)
+        state["conversation_history"] = _conversation_history(db, session_id, current_message_id)
+        result = app.state.orchestrator.respond(text=payload.text, stage=old_stage, state=state)
         if result.safety.flagged:
             db.execute("UPDATE sessions SET stage = ?, safety_flagged = 1 WHERE id = ?", (Stage.SAFETY.value, session_id))
             _record_message(db, session_id, "assistant", result.message)
@@ -287,9 +350,19 @@ def create_app(database: Database | None = None, orchestrator: Orchestrator | No
     def confirm_part(request: Request, session_id: str, payload: ConfirmPartRequest) -> dict[str, Any]:
         profile_id = _profile_from_request(request)
         row = _session(request, session_id, profile_id)
+        db: Database = app.state.db
+        if row["stage"] == Stage.COMPLETE.value:
+            part = db.one("SELECT * FROM parts WHERE profile_id = ? AND lower(name) = lower(?)", (profile_id, payload.name.strip()))
+            existing_activation = db.one(
+                "SELECT id FROM activations WHERE session_id = ? AND part_id = ?",
+                (session_id, part["id"] if part else ""),
+            ) if part else None
+            if not existing_activation:
+                raise HTTPException(409, "Part names can no longer be added to a completed session")
+            attrs = db.all("SELECT key, value, recorded_at FROM attributes WHERE part_id = ? ORDER BY recorded_at", (part["id"],))
+            return {"part_id": part["id"], "name": part["name"], "attributes": [dict(item) for item in attrs], "activation_id": existing_activation["id"]}
         if row["stage"] != Stage.REFLECTION.value:
             raise HTTPException(409, "Part names can be confirmed during reflection")
-        db: Database = app.state.db
         free_text = " ".join([payload.name, *(item.value for item in payload.attributes)])
         safety = _safety_interruption(db, session_id, free_text)
         if safety:
@@ -391,7 +464,7 @@ def create_app(database: Database | None = None, orchestrator: Orchestrator | No
         data = await audio.read(MAX_AUDIO_BYTES + 1)
         if len(data) > MAX_AUDIO_BYTES:
             raise HTTPException(413, "Audio upload exceeds the 10 MB limit")
-        text = app.state.speech.transcribe(data, audio.content_type or "audio/wav")
+        text = await run_in_threadpool(app.state.speech.transcribe, data, audio.content_type or "audio/wav")
         return {"text": text, "fallback": text is None}
 
     return app

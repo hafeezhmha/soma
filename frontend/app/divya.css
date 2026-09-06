@@ -21,7 +21,7 @@
 .divya-app .flow-layout { display: flex; flex-direction: column; max-width: 520px; min-height: 0; padding: 32px 0; gap: 24px; }
 .divya-app .flow-map { position: static; min-height: 0; padding: 0; border: 0; width: 100%; }
 .divya-app .flow-panel { width: 100%; padding: 0; }
-.divya-app:not([data-stage=locate]) .flow-map { display: none; }
+.divya-app:not([data-stage=locate]):not([data-stage=sensation]):not([data-stage=intensity]) .flow-map { display: none; }
 .divya-app .soma-map { margin: 0 auto; }
 .divya-app .soma-map__figure { width: min(100%, 180px); }
 .divya-app .mark-qualities { border: 0; padding: 0; margin: 32px 0 0; }

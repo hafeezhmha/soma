@@ -74,6 +74,14 @@ def test_complete_public_demo_journey_and_transcript_removal():
     session = client.get(f"/sessions/{session_id}", headers=headers).json()
     assert session["transcript_removed"] is True
     assert session["transcript"] == []
+    # A lost response after /complete must be safely retryable by the frontend.
+    retry_after_complete = client.post(
+        f"/sessions/{session_id}/parts",
+        headers=headers,
+        json={"name": "The presenter", "attributes": []},
+    )
+    assert retry_after_complete.status_code == 200
+    assert retry_after_complete.json()["activation_id"] == part.json()["activation_id"]
     assert client.get("/parts", headers=headers).json()[0]["activations"] == 1
 
     assert client.delete("/profiles/me", headers=headers).json() == {"deleted": True}
@@ -185,6 +193,15 @@ def test_public_profile_creation_is_rate_limited():
     assert client.post("/profiles").status_code == 429
 
 
+def test_profile_limit_can_use_overwritten_forwarded_client_identity(monkeypatch):
+    monkeypatch.setenv("TRUST_PROXY_HEADERS", "true")
+    client = _client()
+    for _ in range(10):
+        assert client.post("/profiles", headers={"X-Forwarded-For": "203.0.113.10"}).status_code == 201
+    assert client.post("/profiles", headers={"X-Forwarded-For": "203.0.113.10"}).status_code == 429
+    assert client.post("/profiles", headers={"X-Forwarded-For": "203.0.113.11"}).status_code == 201
+
+
 def test_voice_endpoints_require_auth_and_reject_oversized_audio():
     client = _client()
     assert client.post("/voice/tts", json={"text": "hello"}).status_code == 401
@@ -196,6 +213,23 @@ def test_voice_endpoints_require_auth_and_reject_oversized_audio():
         files={"audio": ("large.wav", b"0" * (10 * 1024 * 1024 + 1), "audio/wav")},
     )
     assert response.status_code == 413
+
+
+def test_voice_stt_uses_configured_speech_service_off_request_handler():
+    client = _client()
+    profile = client.post("/profiles").json()
+    headers = {"Authorization": f"Bearer {profile['profile_token']}"}
+
+    class Speech:
+        def transcribe(self, data, content_type):
+            assert data == b"audio"
+            assert content_type == "audio/webm"
+            return "heard"
+
+    client.app.state.speech = Speech()
+    response = client.post("/voice/stt", headers=headers, files={"audio": ("answer.webm", b"audio", "audio/webm")})
+    assert response.status_code == 200
+    assert response.json() == {"text": "heard", "fallback": False}
 
 
 def test_safety_interrupts_during_exploration_and_blocks_part_creation():

@@ -25,7 +25,8 @@ emergency service.
 
 Actian stores curated knowledge only. Profiles, Parts, activations, summaries,
 and session state live in SQLite. Raw message transcripts are deleted when a
-session completes.
+session completes or automatically cleared after 24 hours for an abandoned
+session.
 
 ## Local development
 
@@ -93,8 +94,10 @@ docker compose run --rm backend python scripts/ingest_knowledge.py
 
 For a public deployment, place an HTTPS reverse proxy in front of port 8000 and
 do not expose VectorAI ports. Set `CORS_ORIGINS` to the exact Vercel frontend URL.
-Enforce per-IP rate limits at that trusted proxy or hosting edge. The in-process
-FastAPI limits are defense in depth only and reset when the API restarts.
+Enforce per-IP rate limits at that trusted proxy or hosting edge. If the proxy
+overwrites (never appends) `X-Forwarded-For`, set `TRUST_PROXY_HEADERS=true` so
+anonymous profile creation is limited per real visitor rather than per proxy.
+The in-process limits are defense in depth and reset when the API restarts.
 
 ## Deployment split
 

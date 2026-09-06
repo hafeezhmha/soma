@@ -27,7 +27,7 @@ Intentional differences / remaining work:
 - Divya's texture choices support multiple selections here, preserving the user's earlier request. Movement is saved; only Spreading currently changes the mark halo, while texture changes ring/dot appearance.
 - Browser visual/microphone verification is pending: in-app Node runtime unavailable and Chrome connection reports Google Chrome is not installed. No browser was installed.
 
-Validation: all 24 Python tests and 12 frontend tests pass; TypeScript, ESLint, and `git diff --check` pass. Local frontend responds HTTP 200. Frontend API tests cover chat stage preservation, saved design attributes, and latest saved colour; backend tests cover chat safety overrides. Independent review found two issues, both fixed: normalize non-advancing chat response metadata, and use the latest saved colour. A production build was deliberately not run alongside the active development server.
+Validation: all 46 Python tests and 14 frontend tests pass; TypeScript, ESLint, and `git diff --check` pass. Local frontend responds HTTP 200 and the API health endpoint returns `{"status":"ok"}`. Frontend API tests cover chat stage preservation and saved design attributes; backend tests cover chat safety overrides, transcript expiry, history continuity, proxy-aware onboarding limits, idempotent save retry, and STT routing. A production build was deliberately not run alongside the active development server.
 
 ## Signed-off product decisions
 
@@ -74,6 +74,8 @@ Validation: all 24 Python tests and 12 frontend tests pass; TypeScript, ESLint, 
 ## Validation log
 
 - Fixed scrolling/sizing: sticky SOMA header, viewport-height-aware fixed orb, wrapping mobile header actions, and non-sticky body maps on stacked/short layouts to prevent overlap and inaccessible controls.
+- Audit fixes completed: deterministic danger coverage expanded, STT moved off the async event loop, abandoned transcript cleanup added (24-hour retention), chat history passed to Claude, profile limiting can use trusted proxy identity, and completed-save retries are idempotent.
+- Deployment note: set `TRUST_PROXY_HEADERS=true` only when the HTTPS proxy overwrites `X-Forwarded-For`; otherwise leave it false to prevent spoofed rate-limit identities.
 
 - Moved the SOMA orb to the right edge, vertically centered in the viewport; reserved content space and reduced its size on mobile.
 

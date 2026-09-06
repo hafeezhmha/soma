@@ -9,6 +9,7 @@ from backend.services.claude import ClaudeService
 from backend.services.elevenlabs import ElevenLabsService
 import httpx
 import sqlite3
+from datetime import datetime, timedelta, timezone
 
 
 def test_safety_gate_catches_immediate_harm_but_not_ordinary_language():
@@ -31,6 +32,23 @@ def test_sqlite_schema_and_cascade_data_deletion():
     db.execute("INSERT INTO messages VALUES ('m', 's', 'user', 'hello', 'now')")
     db.execute("DELETE FROM profiles WHERE id = 'p'")
     assert db.one("SELECT * FROM messages WHERE id = 'm'") is None
+
+
+def test_abandoned_transcript_cleanup_expires_only_unfinished_sessions():
+    db = Database(":memory:")
+    db.initialize()
+    now = datetime.now(timezone.utc)
+    old = (now - timedelta(hours=25)).isoformat()
+    fresh = (now - timedelta(hours=1)).isoformat()
+    db.execute("INSERT INTO profiles (id, token_hash, created_at, display_name) VALUES ('p', 'digest', ?, 'Guest 000')", (old,))
+    db.execute("INSERT INTO sessions (id, profile_id, stage, created_at) VALUES ('old', 'p', 'CHECK_IN', ?), ('fresh', 'p', 'CHECK_IN', ?), ('done', 'p', 'COMPLETE', ?)", (old, fresh, old))
+    db.execute("INSERT INTO messages VALUES ('m-old', 'old', 'user', 'private old text', ?), ('m-fresh', 'fresh', 'user', 'private fresh text', ?), ('m-done', 'done', 'user', 'completed text', ?)", (old, fresh, old))
+    assert db.cleanup_expired_sessions(now=now) == 1
+    expired = db.one("SELECT stage, transcript_removed, initial_statement FROM sessions WHERE id = 'old'")
+    assert expired and expired["stage"] == "EXPIRED" and expired["transcript_removed"] == 1 and expired["initial_statement"] is None
+    assert db.one("SELECT * FROM messages WHERE id = 'm-old'") is None
+    assert db.one("SELECT * FROM messages WHERE id = 'm-fresh'") is not None
+    assert db.one("SELECT * FROM messages WHERE id = 'm-done'") is not None
 
 
 def test_actian_retriever_does_not_send_plaintext_without_embedder():
@@ -58,12 +76,16 @@ def test_deterministic_claude_returns_structured_response():
 
 
 def test_claude_http_structured_response_and_provider_failure_fallback():
+    seen_messages = []
     def handler(request):
+        seen_messages.extend(__import__("json").loads(request.content)["messages"])
         return httpx.Response(200, json={"content": [{"type": "text", "text": '{"message":"hello","current_stage":"CHECK_IN","suggested_next_stage":"BODY_LOCATION","ui_action":{"type":"SHOW_BODY_MAP","payload":{}},"observations":{},"retrieval_needed":false,"safety":{"flagged":false,"immediate_support":false}}'}]})
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
-    result = ClaudeService(api_key="test-key", http_client=client).respond(text="hi", stage=Stage.CHECK_IN, state={}, context=[])
+    result = ClaudeService(api_key="test-key", http_client=client).respond(text="hi", stage=Stage.CHECK_IN, state={"conversation_history": [{"role": "user", "text": "earlier"}, {"role": "assistant", "text": "I hear you"}]}, context=[])
     assert result.message == "hello"
+    assert [(message["role"], message["content"]) for message in seen_messages[:2]] == [("user", "earlier"), ("assistant", "I hear you")]
+    assert seen_messages[-1]["role"] == "user" and '"text": "hi"' in seen_messages[-1]["content"]
     failing = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(503)))
     fallback = ClaudeService(api_key="test-key", http_client=failing).respond(text="hi", stage=Stage.CHECK_IN, state={}, context=[])
     assert fallback.ui_action and fallback.ui_action.type == "SHOW_BODY_MAP"

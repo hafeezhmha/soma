@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { cancelSession, completeExploration, completeRegulation, fetchParts, getProfile, hasConfiguredApi, saveSession, sendChatMessage, setBody, setRecheck, speakText, startSession, transcribeAudio, updateProfile } from '@/lib/api';
-import { markFromPoint, stageAfter } from '@/lib/flow';
+import { isBodyStage, markFromPoint, requiresLeaveConfirmation, stageAfter } from '@/lib/flow';
 import BodyMap from '@/components/BodyMap';
 import SomaOrb from '@/components/SomaOrb';
 import { InnerWeather, MarkQualities, NavigationIcon, PartCharacter } from '@/components/DivyaControls';
@@ -262,6 +262,10 @@ export default function Home() {
       setApiSessionId(undefined);
     }
   };
+  const navigateAway = (destination: 'home' | 'parts') => {
+    if (requiresLeaveConfirmation(stage, Boolean(apiSessionId)) && !window.confirm('Leave this unfinished check-in? Your unsaved conversation and body marks will be discarded.')) return;
+    if (destination === 'home') void stop(); else void openDashboard();
+  };
   const stopVoice = () => {
     abortVoiceRef.current?.abort(); audioRef.current?.pause();
     stopPlaybackMeter();
@@ -396,7 +400,7 @@ export default function Home() {
       }
     } catch (error) { if (operation === operationRef.current) setApiError(error instanceof Error ? error.message : 'That step could not be saved. Try again.'); } finally { if (operation === operationRef.current) setLoading(false); }
   };
-  const canEditBody = !loading && ['locate', 'sensation', 'intensity'].includes(stage);
+  const canEditBody = !loading && !voiceInputActive && isBodyStage(stage);
   const placeMark = (mark: Mark) => { if (!canEditBody) return; if (marks.length >= 10 && !marks.some((item) => item.id === mark.id)) { setApiError('You can keep up to ten marks in a check-in. Select a mark to edit it.'); return; } setMarks((current) => current.some((item) => item.id === mark.id) ? current.map((item) => item.id === mark.id ? mark : item) : [...current, mark]); setSelectedMarkId(mark.id); };
   const removeMark = (id: string) => { if (!canEditBody) return; setMarks((current) => current.filter((mark) => mark.id !== id)); setSelectedMarkId(undefined); };
   const answerByVoice = (text: string) => {
@@ -438,7 +442,7 @@ export default function Home() {
   };
 
   return <main data-stage={stage} className={`app-shell divya-app ${!['safety', 'dashboard', 'part', 'summary'].includes(stage) ? 'app-shell--companion' : ''}`}>
-    <Header onDashboard={() => { void openDashboard(); }} onHome={() => { void stop(); }} stage={stage} speaking={speaking} onStopVoice={stopVoice} />
+    <Header onDashboard={() => navigateAway('parts')} onHome={() => navigateAway('home')} stage={stage} speaking={speaking} onStopVoice={stopVoice} />
     {!['safety', 'dashboard', 'part', 'summary'].includes(stage) && <SomaOrb mode={inputPhase !== 'idle' ? inputPhase : speaking ? 'speaking' : voicePending || loading ? 'thinking' : 'idle'} level={voiceLevel} onStop={stopVoice} />}
     {loading && <p className="caption" role="status">{voicePending ? 'Preparing SOMA’s voice…' : 'Saving your response…'}</p>}
     {voiceNotice && <p className="caption" role="status">{voiceNotice}</p>}
@@ -497,10 +501,10 @@ export default function Home() {
     {stage === 'part' && activePart && <PartPage part={activePart} onBack={() => setStage('dashboard')} />}
     </>}
     {stage !== 'safety' && <nav className="bottom-nav" aria-label="Main navigation">
-      <button aria-current={!chatOpen && stage === 'landing' ? 'page' : undefined} disabled={loading || voiceInputActive} onClick={() => { if (stage === 'landing') { setChatOpen(false); return; } if (!apiSessionId || ['summary', 'dashboard', 'part'].includes(stage) || window.confirm('Leave this unfinished check-in and start again?')) void stop(); }}><NavigationIcon kind="checkin" />Check in</button>
-      <button aria-current={!chatOpen && ['locate', 'sensation', 'intensity'].includes(stage) ? 'page' : undefined} disabled={loading || voiceInputActive || !['locate', 'sensation', 'intensity'].includes(stage)} onClick={() => { stopVoice(); setChatOpen(false); }} title="Body mapping is available during the body steps"><NavigationIcon kind="body" />Body</button>
+      <button aria-current={!chatOpen && stage === 'landing' ? 'page' : undefined} disabled={loading || voiceInputActive} onClick={() => navigateAway('home')}><NavigationIcon kind="checkin" />Check in</button>
+      <button aria-current={!chatOpen && isBodyStage(stage) ? 'page' : undefined} disabled={loading || voiceInputActive || !isBodyStage(stage)} onClick={() => { stopVoice(); setChatOpen(false); }} title="Body mapping is available during the body steps"><NavigationIcon kind="body" />Body</button>
       <button aria-current={chatOpen || !['landing', 'locate', 'sensation', 'intensity', 'summary', 'dashboard', 'part'].includes(stage) ? 'page' : undefined} disabled={loading || voiceInputActive || !apiSessionId || ['summary', 'dashboard', 'part'].includes(stage)} onClick={() => { stopVoice(); setApiError(''); setChatOpen(true); }} title="Start a check-in to talk with SOMA"><NavigationIcon kind="soma" />SOMA</button>
-      <button aria-current={!chatOpen && ['dashboard', 'part', 'summary'].includes(stage) ? 'page' : undefined} disabled={loading || voiceInputActive} onClick={() => { if (!apiSessionId || ['summary', 'dashboard', 'part'].includes(stage) || window.confirm('Leave this unfinished check-in to view your saved parts?')) void openDashboard(); }}><NavigationIcon kind="parts" />Parts</button>
+      <button aria-current={!chatOpen && ['dashboard', 'part', 'summary'].includes(stage) ? 'page' : undefined} disabled={loading || voiceInputActive} onClick={() => navigateAway('parts')}><NavigationIcon kind="parts" />Parts</button>
     </nav>}
   </main>;
 }

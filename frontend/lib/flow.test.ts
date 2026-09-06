@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { markFromPoint, regionForPoint, stageAfter } from './flow';
+import { isBodyStage, markFromPoint, regionForPoint, requiresLeaveConfirmation, stageAfter } from './flow';
 
 describe('flow helpers', () => {
+  it('keeps body editing available for every body-stage tab', () => {
+    for (const stage of ['locate', 'sensation', 'intensity'] as const) expect(isBodyStage(stage)).toBe(true);
+    for (const stage of ['landing', 'regulate', 'recheck', 'name', 'summary'] as const) expect(isBodyStage(stage)).toBe(false);
+  });
+  it('requires confirmation before abandoning an active session', () => {
+    for (const stage of ['locate', 'sensation', 'intensity', 'regulate', 'recheck', 'explore', 'name', 'safety'] as const) expect(requiresLeaveConfirmation(stage, true)).toBe(true);
+    for (const stage of ['landing', 'summary', 'dashboard', 'part'] as const) expect(requiresLeaveConfirmation(stage, true)).toBe(false);
+    expect(requiresLeaveConfirmation('locate', false)).toBe(false);
+  });
   it('moves through the guided sequence and leaves terminal stages alone', () => {
     expect(stageAfter('landing')).toBe('locate');
     expect(stageAfter('locate')).toBe('sensation');

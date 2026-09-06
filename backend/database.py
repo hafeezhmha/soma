@@ -12,7 +12,7 @@ import os
 import sqlite3
 import threading
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -177,3 +177,37 @@ class Database:
         with self.connection() as conn:
             for query, params in statements:
                 conn.execute(query, params)
+
+    def cleanup_expired_sessions(
+        self, *, now: datetime | None = None, retention_hours: int = 24
+    ) -> int:
+        """Remove raw transcripts for abandoned sessions past their retention window.
+
+        The session row and all saved parts/attributes/activations remain available,
+        while the session becomes a terminal ``EXPIRED`` record. Completed sessions
+        are deliberately excluded because their retention is governed by completion.
+        """
+        current = now or datetime.now(timezone.utc)
+        cutoff = (current - timedelta(hours=retention_hours)).astimezone(timezone.utc).isoformat()
+        with self.connection() as conn:
+            rows = conn.execute(
+                "SELECT id FROM sessions WHERE created_at < ? AND stage NOT IN (?, ?)",
+                (cutoff, "COMPLETE", "EXPIRED"),
+            ).fetchall()
+            if not rows:
+                return 0
+            session_ids = [row["id"] for row in rows]
+            placeholders = ", ".join("?" for _ in session_ids)
+            conn.execute(
+                f"DELETE FROM messages WHERE session_id IN ({placeholders})",
+                tuple(session_ids),
+            )
+            conn.execute(
+                f"""UPDATE sessions
+                    SET stage = 'EXPIRED', transcript_removed = 1,
+                        initial_statement = NULL, concern = NULL,
+                        protective_intention = NULL, possible_need = NULL
+                    WHERE id IN ({placeholders})""",
+                tuple(session_ids),
+            )
+            return len(session_ids)
