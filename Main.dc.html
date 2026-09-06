@@ -13,8 +13,9 @@
     *{box-sizing:border-box;}
     body{margin:0;background:var(--bg);font-family:'Work Sans',system-ui,sans-serif;color:var(--ink-body);-webkit-font-smoothing:antialiased;}
     a{color:var(--accent);} a:hover{color:var(--accent-hover);}
-    .screen{width:390px;height:844px;padding:64px 24px 32px;display:flex;flex-direction:column;overflow:hidden;}
-    .display{font-family:'Newsreader',Georgia,serif;font-weight:300;font-size:40px;line-height:1.05;color:var(--ink);margin:0;max-width:9ch;}
+    .app{width:390px;height:844px;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+    .content{flex-grow:1;overflow-y:auto;display:flex;flex-direction:column;padding:56px 24px 28px;}
+    .display{font-family:'Newsreader',Georgia,serif;font-weight:300;font-size:38px;line-height:1.05;color:var(--ink);margin:0;}
     .reflective{font-family:'Newsreader',Georgia,serif;font-weight:300;font-size:17px;line-height:1.6;color:var(--ink-body);}
     .microlabel{font-family:'Work Sans';font-weight:500;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-label);}
     .caption{font-size:11px;line-height:1.5;color:var(--ink-quiet);}
@@ -22,64 +23,292 @@
     .btn-primary{background:var(--accent);color:var(--bg);}
     .btn-primary:hover{background:var(--accent-hover);}
     .btn-secondary{background:transparent;border:1px solid var(--line);color:var(--ink-body);padding:11px 23px;}
+    .field{width:100%;border:none;border-bottom:1px solid var(--line);background:transparent;font-family:'Newsreader',Georgia,serif;font-weight:300;font-size:18px;color:var(--ink);padding:14px 0;outline:none;margin-top:6px;}
+    .field::placeholder{color:var(--placeholder);}
+    .field:focus{border-bottom-color:var(--ink-body);}
+    .chip{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border-radius:999px;padding:8px 14px;font-size:12px;color:var(--ink-body);}
+    .chip-dot{width:7px;height:7px;border-radius:999px;background:var(--accent);flex:none;}
+    .portrait{width:130px;height:130px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;background:var(--surface);}
+    .divider{height:1px;background:var(--line-quiet);width:100%;margin:26px 0;}
+    .nav{flex:none;height:66px;border-top:1px solid var(--line-quiet);display:flex;align-items:stretch;background:var(--bg);}
+    .navitem{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;background:none;border:none;font-family:'Work Sans';font-weight:500;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;}
+    .partname{font-family:'Work Sans';font-weight:400;font-size:14px;color:var(--ink-body);}
+    .row{display:flex;align-items:center;gap:12px;cursor:pointer;padding:8px 0;}
+    .row:hover{background:var(--surface-hover);}
     .tap{cursor:pointer;}
   </style>
 </helmet>
-<div class="screen">
-  <div class="microlabel">Body map</div>
-  <h1 class="display" style="margin-top:22px;">Where do you feel it?</h1>
-  <p class="reflective" style="margin:14px 0 0;max-width:38ch;">Tap where the sensation lives.</p>
+<div class="app">
+  <div class="content">
 
-  <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;width:100%;">
-    <svg width="212" viewBox="0 0 240 470" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="120" cy="44" r="30" stroke="var(--line)" stroke-width="1.5"/>
-      <rect x="82" y="78" width="76" height="150" rx="30" stroke="var(--line)" stroke-width="1.5"/>
-      <rect x="88" y="230" width="64" height="202" rx="26" stroke="var(--line)" stroke-width="1.5"/>
+    <!-- ===== CHECK IN ===== -->
+    <sc-if value="{{isCheckin}}" hint-placeholder-val="{{true}}">
+      <div style="display:flex;flex-direction:column;flex-grow:1;">
+        <div class="microlabel">Check in</div>
+        <h1 class="display" style="margin-top:20px;max-width:9ch;">How are you feeling?</h1>
+        <p class="reflective" style="margin:16px 0 0;max-width:40ch;">Notice what's here, without fixing it. Choose what fits — or more than one.</p>
+        <div class="microlabel" style="margin-top:40px;">Right now I feel</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;">
+          <sc-for list="{{chips}}" as="chip" hint-placeholder-count="8">
+            <button style="{{chip.style}}" onClick="{{chip.pick}}">{{chip.label}}</button>
+          </sc-for>
+        </div>
+        <div style="flex-grow:1;"></div>
+        <p class="caption" style="margin-bottom:16px;">A short guided check-in follows — voice or tap, your choice.</p>
+        <button class="btn btn-primary" style="width:100%;" onClick="{{goBodymap}}">Begin check-in</button>
+      </div>
+    </sc-if>
 
-      <circle cx="120" cy="74"  r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
-      <circle cx="120" cy="130" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
-      <circle cx="120" cy="198" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
-      <circle cx="120" cy="300" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
-      <circle cx="120" cy="372" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+    <!-- ===== BODY MAP ===== -->
+    <sc-if value="{{isBodymap}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;flex-direction:column;flex-grow:1;">
+        <div class="microlabel">Body map</div>
+        <h1 class="display" style="margin-top:20px;">Where do you feel it?</h1>
+        <p class="reflective" style="margin:14px 0 0;max-width:38ch;">Tap where the sensation lives.</p>
+        <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;width:100%;">
+          <svg width="196" viewBox="0 0 240 470" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="120" cy="44" r="30" stroke="var(--line)" stroke-width="1.5"/>
+            <rect x="82" y="78" width="76" height="150" rx="30" stroke="var(--line)" stroke-width="1.5"/>
+            <rect x="88" y="230" width="64" height="202" rx="26" stroke="var(--line)" stroke-width="1.5"/>
+            <circle cx="120" cy="74"  r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+            <circle cx="120" cy="130" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+            <circle cx="120" cy="198" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+            <circle cx="120" cy="300" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+            <circle cx="120" cy="372" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+            <circle class="tap" cx="120" cy="74"  r="26" fill="var(--accent)" opacity="0" onClick="{{pickJaw}}"/>
+            <circle class="tap" cx="120" cy="130" r="26" fill="var(--accent)" opacity="0" onClick="{{pickChest}}"/>
+            <circle class="tap" cx="120" cy="198" r="26" fill="var(--accent)" opacity="0" onClick="{{pickGut}}"/>
+            <circle class="tap" cx="120" cy="300" r="26" fill="var(--accent)" opacity="0" onClick="{{pickHips}}"/>
+            <circle class="tap" cx="120" cy="372" r="26" fill="var(--accent)" opacity="0" onClick="{{pickThighs}}"/>
+            <circle cx="{{pcx}}" cy="{{pcy}}" r="34" stroke="var(--accent-soft)" stroke-width="1.5" fill="none" opacity="{{markOpacity}}"/>
+            <circle cx="{{pcx}}" cy="{{pcy}}" r="6" fill="var(--accent)" opacity="{{markOpacity}}"/>
+          </svg>
+        </div>
+        <div style="height:40px;display:flex;align-items:center;gap:8px;opacity:{{markOpacity}};">
+          <span style="width:10px;height:10px;border-radius:999px;background:var(--accent);display:inline-block;"></span>
+          <span style="font-size:12px;color:var(--ink-body);">a sensation — {{plabel}}</span>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button style="{{nameBtnStyle}}" onClick="{{goNaming}}">Name this part</button>
+          <button class="btn btn-secondary" onClick="{{goDashboard}}">Not now</button>
+        </div>
+      </div>
+    </sc-if>
 
-      <circle class="tap" cx="120" cy="74"  r="26" fill="var(--accent)" opacity="0" onClick="{{pickJaw}}"/>
-      <circle class="tap" cx="120" cy="130" r="26" fill="var(--accent)" opacity="0" onClick="{{pickChest}}"/>
-      <circle class="tap" cx="120" cy="198" r="26" fill="var(--accent)" opacity="0" onClick="{{pickGut}}"/>
-      <circle class="tap" cx="120" cy="300" r="26" fill="var(--accent)" opacity="0" onClick="{{pickHips}}"/>
-      <circle class="tap" cx="120" cy="372" r="26" fill="var(--accent)" opacity="0" onClick="{{pickThighs}}"/>
+    <!-- ===== NAMING (SOMA) ===== -->
+    <sc-if value="{{isNaming}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;flex-direction:column;flex-grow:1;">
+        <div class="microlabel">Soma</div>
+        <div style="margin-top:26px;display:flex;gap:12px;align-items:flex-start;">
+          <span style="margin-top:8px;width:8px;height:8px;border-radius:999px;background:var(--accent-soft);flex:none;"></span>
+          <p class="reflective" style="margin:0;max-width:38ch;">There's something in your {{plabel}} — restless, alive. A part of you might live here. Would you like to give it a name?</p>
+        </div>
+        <div style="margin-top:40px;">
+          <div class="microlabel">This part is called</div>
+          <input class="field" placeholder="Give this part a name…" value="{{draftName}}" onInput="{{onName}}"/>
+        </div>
+        <div style="margin-top:32px;">
+          <div class="microlabel" style="margin-bottom:14px;">How it feels so far</div>
+          <span class="chip"><span class="chip-dot"></span>{{displayName}}</span>
+        </div>
+        <div style="flex-grow:1;"></div>
+        <p class="caption" style="margin-bottom:16px;">Soma only writes down what you tell it. You can rename or release this part any time.</p>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary" style="flex-grow:1;" onClick="{{savePart}}">Save this part</button>
+          <button class="btn btn-secondary" onClick="{{goDashboard}}">Not now</button>
+        </div>
+      </div>
+    </sc-if>
 
-      <circle cx="{{pcx}}" cy="{{pcy}}" r="34" stroke="var(--accent-soft)" stroke-width="1.5" fill="none" opacity="{{markOpacity}}"/>
-      <circle cx="{{pcx}}" cy="{{pcy}}" r="6" fill="var(--accent)" opacity="{{markOpacity}}"/>
-    </svg>
+    <!-- ===== PART PAGE ===== -->
+    <sc-if value="{{isPart}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;flex-direction:column;flex-grow:1;">
+        <button class="navitem" style="align-self:flex-start;flex:none;flex-direction:row;gap:7px;color:var(--ink-quiet);padding:0;margin-bottom:8px;" onClick="{{goDashboard}}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Your parts
+        </button>
+        <div style="display:flex;flex-direction:column;align-items:center;margin-top:8px;">
+          <div class="portrait">
+            <svg width="100" height="100" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 120 C18 92 38 84 60 84 C82 84 102 92 102 120 Z" fill="#dfe4dd"/>
+              <rect x="52" y="64" width="16" height="24" rx="8" fill="#e8ddd4"/>
+              <circle cx="60" cy="46" r="26" fill="#ece2d8"/>
+              <circle cx="51" cy="46" r="2" fill="#7a6f66"/>
+              <circle cx="69" cy="46" r="2" fill="#7a6f66"/>
+            </svg>
+          </div>
+          <div class="caption" style="margin-top:8px;">character art · placeholder</div>
+          <h1 class="display" style="margin-top:14px;">{{activeName}}</h1>
+          <p class="reflective" style="margin:6px 0 0;text-align:center;max-width:34ch;">{{activeBlurb}}</p>
+        </div>
+        <div class="divider"></div>
+        <div class="microlabel">Where it lives</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:12px;">
+          <span style="width:10px;height:10px;border-radius:999px;background:var(--accent);display:inline-block;"></span>
+          <span class="caption" style="font-size:12px;">{{activeLocation}}</span>
+        </div>
+        <div class="divider"></div>
+        <div class="microlabel">Its days</div>
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:16px;">
+          <sc-for list="{{activeTimeline}}" as="entry" hint-placeholder-count="3">
+            <div>
+              <div class="microlabel" style="color:var(--ink-quiet);">{{entry.d}}</div>
+              <p class="reflective" style="margin:4px 0 0;">{{entry.t}}</p>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== DASHBOARD ===== -->
+    <sc-if value="{{isDashboard}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;flex-direction:column;flex-grow:1;">
+        <div class="microlabel">Your parts</div>
+        <h1 class="display" style="margin-top:20px;">This week</h1>
+        <p class="reflective" style="margin:12px 0 0;max-width:38ch;">Which parts have been with you, and how often. Nothing to keep up — just noticing.</p>
+        <div class="microlabel" style="margin-top:36px;">Showed up</div>
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:18px;">
+          <sc-for list="{{gridRows}}" as="row" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:98px;display:flex;align-items:center;gap:8px;flex:none;">
+                <span style="{{row.dotStyle}}"></span>
+                <span class="partname" style="font-size:13px;">{{row.name}}</span>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <sc-for list="{{row.cells}}" as="cell" hint-placeholder-count="7">
+                  <span style="{{cell.style}}"></span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div class="divider"></div>
+        <div class="microlabel">Parts you've met</div>
+        <div style="margin-top:10px;display:flex;flex-direction:column;">
+          <sc-for list="{{partRows}}" as="row" hint-placeholder-count="3">
+            <button class="row" style="border:none;background:none;text-align:left;width:100%;" onClick="{{row.open}}">
+              <span style="{{row.dotStyle}}"></span>
+              <span class="partname" style="flex-grow:1;">{{row.name}}</span>
+              <span class="caption">{{row.last}}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="var(--ink-quiet)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </sc-for>
+        </div>
+        <div style="flex-grow:1;min-height:24px;"></div>
+        <button class="btn btn-primary" style="width:100%;" onClick="{{goCheckin}}">New check-in</button>
+      </div>
+    </sc-if>
+
   </div>
 
-  <div style="height:44px;display:flex;align-items:center;gap:8px;opacity:{{markOpacity}};">
-    <span style="width:10px;height:10px;border-radius:999px;background:var(--accent);display:inline-block;"></span>
-    <span style="font-size:12px;color:var(--ink-body);">a sensation — {{plabel}}</span>
-  </div>
-
-  <div style="display:flex;gap:10px;">
-    <button class="btn btn-primary" style="flex-grow:1;">Name this part</button>
-    <button class="btn btn-secondary">Not now</button>
-  </div>
+  <!-- ===== BOTTOM NAV ===== -->
+  <sc-if value="{{showNav}}" hint-placeholder-val="{{true}}">
+    <div class="nav">
+      <button class="navitem" style="color:{{checkinColor}};" onClick="{{goCheckin}}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/></svg>
+        Check in
+      </button>
+      <button class="navitem" style="color:{{partsColor}};" onClick="{{goDashboard}}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="9" r="3.2" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="9" r="3.2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="16" r="3.2" stroke="currentColor" stroke-width="1.5"/></svg>
+        Your parts
+      </button>
+    </div>
+  </sc-if>
 </div>
 </x-dc>
 <script data-dc-script data-props='{}'>
 class Component extends DCLogic {
-  constructor(props){ super(props); this.state = { picked: null, pcx: 120, pcy: 235, plabel: '' }; }
-  sel(id, cx, cy, label){ this.setState({ picked: id, pcx: cx, pcy: cy, plabel: label }); }
-  renderVals() {
-    const p = this.state.picked;
+  constructor(props){
+    super(props);
+    this.state = {
+      screen: 'checkin',
+      feelings: {},
+      sensation: null,
+      draftName: 'the teenager',
+      activeId: 'teen',
+      parts: [
+        { id:'teen',  name:'the teenager',  color:'var(--accent)',      location:'jaw — electric, restless', last:'Sep 5 · jaw',
+          days:[1,0,1,1,0,1,0], blurb:'Wild, a little naughty. She shows up as an electric charge in the jaw.',
+          timeline:[{d:'Sep 5',t:'Feeling saucy — pink hair today.'},{d:'Sep 3',t:'Restless. Wanted the last word.'},{d:'Aug 30',t:'First noticed — an electric buzz in the jaw.'}] },
+        { id:'plan',  name:'the planner',   color:'var(--accent-soft)', location:'shoulders — a tight clench', last:'Sep 4 · shoulders',
+          days:[1,1,1,1,1,0,0], blurb:'Always three steps ahead. Holds the shoulders tight so nothing is forgotten.',
+          timeline:[{d:'Sep 4',t:'Tight shoulders. Making lists in the dark.'},{d:'Aug 28',t:'First noticed — a clench across the shoulders.'}] },
+        { id:'small', name:'the small one', color:'var(--accent-soft)', location:'chest — a soft ache', last:'Sep 2 · chest',
+          days:[0,1,0,0,1,0,1], blurb:'Quiet and young. Wants to be near, and to be held.',
+          timeline:[{d:'Sep 2',t:'A soft ache in the chest, wanting to be held.'}] },
+      ],
+    };
+  }
+  go(screen){ this.setState({ screen }); }
+  setSensation(label, cx, cy){ this.setState({ sensation: { label, cx, cy } }); }
+  savePart(){
+    const s = this.state.sensation;
+    const name = (this.state.draftName && this.state.draftName.trim()) ? this.state.draftName.trim() : 'unnamed part';
+    const id = 'p' + Date.now();
+    const loc = s ? (s.label + ' — where you felt it') : 'somewhere in the body';
+    const part = { id, name, color:'var(--accent-soft)', location:loc, last:'today · ' + (s ? s.label : ''),
+      days:[0,0,0,0,0,0,1], blurb:'A part of you, just met. You can tell Soma more any time.',
+      timeline:[{d:'Today',t:'First noticed — ' + (s ? s.label : 'a sensation') + '.'}] };
+    this.setState({ parts: [part, ...this.state.parts], activeId: id, screen: 'part', sensation: null, feelings: {}, draftName: 'the teenager' });
+  }
+  openPart(id){ this.setState({ activeId: id, screen: 'part' }); }
+  renderVals(){
+    const sc = this.state.screen;
+    const feelingList = ['scattered','wired','heavy','foggy','tender','raw','quiet','okay'];
+    const picked = this.state.feelings || {};
+    const chipBase = "font-family:'Work Sans';font-size:13px;border-radius:999px;padding:10px 18px;cursor:pointer;border:1px solid var(--line);";
+    const chips = feelingList.map((f) => ({
+      label: f,
+      pick: () => { const n = { ...(this.state.feelings||{}) }; n[f] = !n[f]; this.setState({ feelings: n }); },
+      style: chipBase + (picked[f] ? 'background:var(--accent);color:var(--bg);border-color:var(--accent);' : 'background:var(--surface);color:var(--ink-body);'),
+    }));
+
+    const s = this.state.sensation;
+    const hasMark = !!s;
+    const nameBtnBase = "font-family:'Work Sans';font-weight:400;font-size:13px;border-radius:999px;padding:12px 24px;border:none;cursor:pointer;flex-grow:1;";
+    const nameBtnStyle = hasMark
+      ? nameBtnBase + 'background:var(--accent);color:var(--bg);'
+      : nameBtnBase + 'background:var(--surface);color:var(--ink-quiet);cursor:default;';
+
+    const parts = this.state.parts;
+    const active = parts.find((p) => p.id === this.state.activeId) || parts[0];
+
+    const dot = (c) => 'width:9px;height:9px;border-radius:999px;flex:none;display:inline-block;background:' + c + ';';
+    const gridRows = parts.slice(0, 3).map((p) => ({
+      name: p.name, dotStyle: dot(p.color),
+      cells: p.days.map((d) => ({
+        style: d
+          ? 'width:12px;height:12px;border-radius:999px;display:inline-block;background:' + p.color + ';'
+          : 'width:12px;height:12px;border-radius:999px;display:inline-block;border:1.5px solid var(--line-quiet);',
+      })),
+    }));
+    const partRows = parts.map((p) => ({
+      name: p.name, last: p.last, dotStyle: dot(p.color), open: () => this.openPart(p.id),
+    }));
+
+    const showNav = (sc === 'checkin' || sc === 'dashboard' || sc === 'part');
+
     return {
-      pickJaw:    () => this.sel('jaw', 120, 74, 'jaw'),
-      pickChest:  () => this.sel('chest', 120, 130, 'chest'),
-      pickGut:    () => this.sel('gut', 120, 198, 'belly'),
-      pickHips:   () => this.sel('hips', 120, 300, 'hips'),
-      pickThighs: () => this.sel('thighs', 120, 372, 'thighs'),
-      pcx: this.state.pcx,
-      pcy: this.state.pcy,
-      markOpacity: p ? 1 : 0,
-      plabel: this.state.plabel || '',
+      isCheckin: sc === 'checkin', isBodymap: sc === 'bodymap', isNaming: sc === 'naming', isPart: sc === 'part', isDashboard: sc === 'dashboard',
+      chips,
+      goBodymap: () => this.go('bodymap'), goNaming: () => { if (this.state.sensation) this.go('naming'); },
+      goDashboard: () => this.go('dashboard'), goCheckin: () => this.go('checkin'),
+      pickJaw:    () => this.setSensation('jaw', 120, 74),
+      pickChest:  () => this.setSensation('chest', 120, 130),
+      pickGut:    () => this.setSensation('belly', 120, 198),
+      pickHips:   () => this.setSensation('hips', 120, 300),
+      pickThighs: () => this.setSensation('thighs', 120, 372),
+      pcx: s ? s.cx : 120, pcy: s ? s.cy : 235, markOpacity: hasMark ? 1 : 0, plabel: s ? s.label : 'the body',
+      nameBtnStyle,
+      draftName: this.state.draftName,
+      onName: (e) => this.setState({ draftName: e.target.value }),
+      displayName: (this.state.draftName && this.state.draftName.trim()) ? this.state.draftName : 'unnamed part',
+      savePart: () => this.savePart(),
+      activeName: active.name, activeBlurb: active.blurb, activeLocation: active.location, activeTimeline: active.timeline,
+      gridRows, partRows,
+      showNav,
+      checkinColor: sc === 'checkin' ? 'var(--accent)' : 'var(--ink-quiet)',
+      partsColor: (sc === 'dashboard' || sc === 'part') ? 'var(--accent)' : 'var(--ink-quiet)',
     };
   }
 }

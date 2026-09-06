@@ -1,13 +1,9 @@
 {
   "artboards": [
-    { "file": "CheckIn.dc.html",   "x": 0,    "y": 0, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "Main.dc.html",      "x": 470,  "y": 0, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "Naming.dc.html",    "x": 940,  "y": 0, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "Part.dc.html",      "x": 1410, "y": 0, "w": 390, "h": 940 },
-    { "file": "Dashboard.dc.html", "x": 1880, "y": 0, "w": 390, "h": 940 }
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "is_interactive": true, "expand": "fit" }
   ],
   "annotations": [
-    { "id": "flow-note", "x": 0, "y": -104, "w": 520, "text": "The spine — left to right: check in → map the sensation on the body → Soma helps you name the part → visit her as a character → review your parts over time. Tap the feeling chips and the body map; type a name on the Soma screen." }
+    { "id": "flow-note", "x": 470, "y": 0, "w": 300, "text": "One working app. Check in → tap the body map → Soma names the part → it appears in Your parts. Bottom nav switches Check in / Your parts; tap any part to open it. Saving a new part adds it to the list live." }
   ],
-  "launch": { "view": "canvas" }
+  "launch": { "view": "focused", "file": "Main.dc.html" }
 }
