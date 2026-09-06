@@ -1,0 +1,203 @@
+.soma-orb {
+  --orb-level: 0;
+  --orb-tilt-x: 0deg;
+  --orb-tilt-y: 0deg;
+  width: min(100%, 180px);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--ink-body, #d2e3d7);
+}
+
+.soma-orb__control {
+  position: relative;
+  width: clamp(132px, 34vw, 160px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  transform: perspective(680px) rotateX(var(--orb-tilt-y)) rotateY(var(--orb-tilt-x));
+  transition: transform 480ms cubic-bezier(.22, .61, .36, 1);
+  touch-action: manipulation;
+}
+
+.soma-orb__control--speaking {
+  cursor: pointer;
+}
+
+.soma-orb__control--speaking:focus-visible {
+  outline: 1px solid #8ad6ad;
+  outline-offset: 6px;
+}
+
+.soma-orb__visual,
+.soma-orb__aura,
+.soma-orb__orbit,
+.soma-orb__body {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: inherit;
+}
+
+.soma-orb__visual {
+  transform: scale(calc(1 + var(--orb-level) * .04));
+  transition: transform 280ms ease;
+}
+
+.soma-orb__aura {
+  inset: -27%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(51, 185, 111, calc(.18 + var(--orb-level) * .28)) 0 25%, transparent 70%),
+    radial-gradient(ellipse at 50% 50%, rgba(23, 117, 74, calc(.16 + var(--orb-level) * .2)), transparent 66%);
+  filter: blur(18px);
+  opacity: calc(.72 + var(--orb-level) * .2);
+  transform: scale(calc(.92 + var(--orb-level) * .15));
+}
+
+.soma-orb__orbit {
+  inset: 7%;
+  border: 1px solid rgba(111, 211, 151, calc(.16 + var(--orb-level) * .34));
+  box-shadow: 0 0 18px rgba(58, 178, 112, calc(.08 + var(--orb-level) * .2));
+  transform: rotate(-23deg) scaleX(.68);
+}
+
+.soma-orb__orbit--inner {
+  inset: 15%;
+  border-color: rgba(190, 255, 214, calc(.12 + var(--orb-level) * .25));
+  transform: rotate(38deg) scaleX(.78) scaleY(.94);
+}
+
+.soma-orb__body {
+  inset: 14%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(180, 255, 209, .7) 0 3%, rgba(100, 216, 149, .32) 15%, transparent 35%),
+    radial-gradient(circle at 72% 77%, rgba(1, 35, 25, .88) 0 20%, transparent 61%),
+    linear-gradient(145deg, #58bd82 0%, #176a46 33%, #0a3828 68%, #031a13 100%);
+  box-shadow:
+    inset 8px 8px 18px rgba(187, 255, 215, .2),
+    inset -13px -17px 22px rgba(0, 9, 6, .58),
+    0 9px 26px rgba(1, 26, 17, .26);
+  transform: translateZ(18px);
+}
+
+.soma-orb__body::before {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(188, 255, 215, .35);
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(0, 25, 15, .24);
+  content: "";
+}
+
+.soma-orb__sheen {
+  position: absolute;
+  top: 13%;
+  left: 19%;
+  width: 38%;
+  height: 22%;
+  border-radius: 50%;
+  background: rgba(223, 255, 234, .42);
+  filter: blur(8px);
+  transform: rotate(-28deg);
+}
+
+.soma-orb__core {
+  position: absolute;
+  top: 43%;
+  left: 43%;
+  width: 14%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: rgba(202, 255, 221, calc(.2 + var(--orb-level) * .56));
+  box-shadow: 0 0 16px 5px rgba(96, 230, 148, calc(.08 + var(--orb-level) * .24));
+  transform: scale(calc(.72 + var(--orb-level) * .8));
+  transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.soma-orb--idle .soma-orb__aura {
+  animation: soma-orb-breathe 6s ease-in-out infinite;
+}
+
+.soma-orb--idle .soma-orb__body {
+  animation: soma-orb-idle-body 6s ease-in-out infinite;
+}
+
+.soma-orb--thinking .soma-orb__orbit--outer {
+  animation: soma-orb-orbit 3.2s linear infinite;
+}
+
+.soma-orb--speaking .soma-orb__body,
+.soma-orb--listening .soma-orb__body {
+  transform: translateZ(18px) scale(calc(1 + var(--orb-level) * .08));
+  transition: transform 120ms ease-out;
+}
+
+.soma-orb__status {
+  max-width: 100%;
+  margin: 9px 0 0;
+  color: var(--ink-quiet, #91a59a);
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: .06em;
+  text-align: center;
+}
+
+@keyframes soma-orb-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+
+@keyframes soma-orb-idle-body {
+  0%, 100% { transform: translateZ(18px) scale(1); }
+  50% { transform: translateZ(18px) scale(calc(1 + var(--orb-level) * .03)); }
+}
+
+@keyframes soma-orb-listen {
+  0%, 100% { opacity: .72; transform: scale(.98); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@keyframes soma-orb-orbit {
+  to { transform: rotate(337deg) scaleX(.68); }
+}
+
+@keyframes soma-orb-speak {
+  0%, 100% { transform: translateZ(18px) scale(1); }
+  50% { transform: translateZ(18px) scale(calc(1 + var(--orb-level) * .08)); }
+}
+
+@media (max-width: 420px) {
+  .soma-orb {
+    width: 164px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soma-orb .soma-orb__control,
+  .soma-orb .soma-orb__visual,
+  .soma-orb .soma-orb__aura,
+  .soma-orb .soma-orb__body,
+  .soma-orb .soma-orb__core {
+    transform: none;
+    transition: none;
+  }
+  .soma-orb__control,
+  .soma-orb__visual,
+  .soma-orb__core {
+    transition: none;
+  }
+
+  .soma-orb--idle .soma-orb__aura,
+  .soma-orb--idle .soma-orb__body,
+  .soma-orb--listening .soma-orb__aura,
+  .soma-orb--thinking .soma-orb__orbit--outer,
+  .soma-orb--speaking .soma-orb__body {
+    animation: none;
+  }
+}

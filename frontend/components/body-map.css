@@ -1,0 +1,49 @@
+.soma-map { width: 100%; max-width: 340px; color: var(--ink-body); }
+.soma-map__orientation { display: flex; justify-content: space-between; gap: 16px; color: var(--ink-quiet); font-size: 10px; line-height: 1.5; }
+.soma-map__orientation span:last-child { color: var(--ink-quiet); }
+.soma-map__figure { position: relative; width: min(100%, 250px); aspect-ratio: 100 / 180; margin: 20px auto 0; }
+.soma-map__canvas { display: block; width: 100%; height: 100%; overflow: visible; }
+.soma-map__outline { fill: transparent; stroke: var(--line); stroke-width: 1.4px; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; cursor: crosshair; touch-action: none; }
+.soma-map__outline:hover { stroke: var(--ink-quiet); }
+.soma-map__ink { pointer-events: none; }
+.soma-map__spread { fill: none; stroke: var(--accent-soft); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.soma-map__spread--selected { stroke: var(--accent); }
+.soma-map__dot { fill: var(--accent); }
+.soma-map__target { position: absolute; display: block; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 999px; background: transparent; transform: translate(-50%, -50%); touch-action: manipulation; }
+.soma-map__target:hover { outline: 1px solid var(--accent-soft); outline-offset: -8px; }
+.soma-map__target:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.soma-map__hint { margin: 18px 0 0; color: var(--ink-body); text-align: center; font-size: 12px; line-height: 1.7; }
+.soma-map__hint span { color: var(--ink-quiet); font-size: 11px; }
+.soma-map__selection { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--line-quiet); }
+.soma-map__marks { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.soma-map__mark-label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--ink-body); font-size: 12px; text-transform: capitalize; }
+.soma-map__mark-label--selected { background: var(--surface); border-color: var(--line); }
+button.soma-map__mark-label:hover { background: var(--surface); }
+.soma-map__swatch { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 999px; background: var(--accent); }
+.soma-map__spread-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 11px; }
+.soma-map__remove { min-height: 44px; padding: 8px 0 8px 12px; border: 0; background: transparent; color: var(--ink-quiet); font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+.soma-map__remove:hover { color: var(--ink); }
+.soma-map input.soma-map__range { display: block; width: 100%; height: 28px; margin: 0; padding: 0; accent-color: var(--accent); }
+.soma-map__range-labels { display: flex; justify-content: space-between; color: var(--ink-quiet); font-size: 10px; }
+.soma-map__area-picker { margin-top: 20px; border-top: 1px solid var(--line-quiet); }
+.soma-map__area-picker summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; color: var(--ink-body); font-size: 11px; cursor: pointer; list-style: none; }
+.soma-map__area-picker summary::-webkit-details-marker { display: none; }
+.soma-map__area-picker summary:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.soma-map__area-picker summary span { font-size: 15px; }
+.soma-map__area-picker[open] summary span { transform: rotate(45deg); }
+.soma-map__area-controls { display: flex; align-items: center; gap: 12px; padding: 4px 0 12px; }
+.soma-map__area-controls select { flex: 1; width: 0; min-height: 44px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 8px 4px; background: var(--bg); color: var(--ink); font: inherit; font-size: 12px; }
+.soma-map__area-controls select:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.soma-map__area-controls button { min-height: 44px; border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px; background: transparent; color: var(--ink-body); font-size: 12px; }
+.soma-map__area-controls button:hover { background: var(--surface); }
+.soma-map--readonly .soma-map__outline { cursor: default; pointer-events: none; }
+.soma-map__sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.summary-mark .soma-map { width: 140px; }
+.summary-mark .soma-map__figure { width: 122px; margin: 0 auto; }
+.summary-mark .soma-map__orientation, .summary-mark .soma-map__selection { display: none; }
+
+@media (max-width: 760px) {
+  .soma-map { max-width: 340px; margin: 0 auto; }
+  .soma-map__figure { width: min(100%, 190px); margin-top: 12px; }
+  .soma-map__hint { margin-top: 12px; }
+}

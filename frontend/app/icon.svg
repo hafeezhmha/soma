@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>SOMA</title>
+  <rect width="64" height="64" rx="16" fill="#FCFCFB"/>
+  <circle cx="32" cy="32" r="22" stroke="#CDD6CB" stroke-width="2"/>
+  <circle cx="32" cy="32" r="11" stroke="#B7C6B4" stroke-width="2"/>
+  <circle cx="32" cy="32" r="5" fill="#4A7360"/>
+</svg>

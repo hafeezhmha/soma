@@ -1,0 +1,2 @@
+"""Curated knowledge retrieval boundary."""
+

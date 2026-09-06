@@ -1,4 +1,4 @@
-# Clearing — Design System
+# SOMA — Design System
 
 Direction 1b. A quiet, near-white system for clients doing IFS parts work. Trust comes from restraint: generous air, almost no ornament, and one accent color that only ever marks a part.
 

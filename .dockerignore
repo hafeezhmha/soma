@@ -1,0 +1,7 @@
+.git
+.venv
+frontend
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+backend/*.sqlite3

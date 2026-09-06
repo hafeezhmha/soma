@@ -1,0 +1,48 @@
+services:
+  vectorai:
+    image: actian/vectorai:1.0.2
+    restart: unless-stopped
+    environment:
+      ACTIAN_VECTORAI_ACCEPT_EULA: "YES"
+    ports:
+      - "127.0.0.1:6573:6573"
+      - "127.0.0.1:6574:6574"
+      - "127.0.0.1:6575:6575"
+    volumes:
+      - vectorai_data:/var/lib/actian-vectorai
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - vectorai
+    environment:
+      SOMA_DATABASE_URL: /data/soma.sqlite3
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-6}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
+      ELEVENLABS_TTS_MODEL: ${ELEVENLABS_TTS_MODEL:-eleven_v3}
+      ELEVENLABS_TONE_TAG: "${ELEVENLABS_TONE_TAG:-[whispers, breathy, very softly, close to the mic]}"
+      ELEVENLABS_PAUSES: ${ELEVENLABS_PAUSES:-2}
+      ELEVENLABS_STABILITY: ${ELEVENLABS_STABILITY:-1.0}
+      ELEVENLABS_SIMILARITY: ${ELEVENLABS_SIMILARITY:-0.90}
+      ELEVENLABS_STYLE: ${ELEVENLABS_STYLE:-0.05}
+      VECTORAI_URL: vectorai:6574
+      VECTORAI_DIMENSIONS: "384"
+      EMBEDDING_MODEL: all-MiniLM-L6-v2
+      RAG_ENABLED: "true"
+      HF_HOME: /model-cache
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - soma_data:/data
+      - embedding_cache:/model-cache
+
+volumes:
+  vectorai_data:
+  soma_data:
+  embedding_cache:

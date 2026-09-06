@@ -25,10 +25,10 @@ IFS parts*. Noticing a physical sensation is how a user locates a part.
   body map or check-in.
 - **Check-in** — the entry ritual: a short "how are you feeling?" prompt that opens
   a session before body mapping.
-- **Soma** — the central conversational AI agent (the app itself is **Clearing**).
+- **SOMA** — the app and its central conversational AI guide.
   Guides check-ins, helps name Parts from Sensations, runs guided meditations.
   **Authority rule:** the *user* supplies all meaning (names, attributes, moods);
-  Soma only *proposes* and then *persists/structures* what the user states. Soma
+  SOMA only *proposes* and then *persists/structures* what the user states. SOMA
   never silently invents or asserts a Part's feelings. Naming is user-confirmed.
 - **Part attributes** — evolving, user-supplied descriptors on a Part (mood/state,
   appearance, the Sensation that surfaced it), each stamped with a date. Attributes
@@ -44,4 +44,3 @@ IFS parts*. Noticing a physical sensation is how a user locates a part.
   events and are rendered as time allows.
 - **Dashboard** — review surface. Lets the user open an individual Part (character +
   attribute timeline) and see Trends across Parts, all derived from Session events.
-

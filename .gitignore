@@ -1,6 +1,14 @@
 node_modules/
 .DS_Store
 .env
+frontend/.env.local
+.venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.sqlite3
+frontend/.next/
+frontend/tsconfig.tsbuildinfo
 dist/
 build/
 

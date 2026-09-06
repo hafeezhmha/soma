@@ -3,13 +3,17 @@
 Tiny local app for **text → speech** and **speech → text**. Python stdlib only, no dependencies.
 
 ## Setup
-1. Put your key in `.env`:
+1. Put your key in the repository root `.env` (SOMA's existing configuration):
    ```
    ELEVENLABS_API_KEY=sk_...
    ```
-2. Run it:
+   You may instead create `voice_studio/.env` for a studio-specific override.
+   If `ELEVENLABS_VOICE_ID` is set, that voice is placed first when the API can
+   list it.
+2. From the repository root, run it:
    ```
-   python3 server.py          # or: PORT=8056 python3 server.py
+   python3 voice_studio/server.py
+   # or: PORT=8056 python3 voice_studio/server.py
    ```
 3. Open http://localhost:8055
 

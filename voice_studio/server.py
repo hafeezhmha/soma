@@ -20,19 +20,32 @@ PORT = int(os.environ.get("PORT", "8055"))
 
 
 def load_env():
-    env = ROOT / ".env"
-    if not env.exists():
-        return
-    for line in env.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
+    # A studio-specific file can override the shared SOMA configuration.
+    # The repository root .env is used automatically when no override exists.
+    for env in (ROOT / ".env", ROOT.parent / ".env"):
+        if not env.exists():
             continue
-        k, v = line.split("=", 1)
-        os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+        for line in env.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip("'\""))
 
 
 def api_key():
     return os.environ.get("ELEVENLABS_API_KEY", "").strip()
+
+
+def preferred_voice_id():
+    return os.environ.get("ELEVENLABS_VOICE_ID", "").strip()
+
+
+def preferred_first(voices):
+    preferred = preferred_voice_id()
+    if not preferred:
+        return voices
+    return sorted(voices, key=lambda voice: voice.get("id") != preferred)
 
 
 def call(path, payload=None, method="GET"):
@@ -192,11 +205,11 @@ class Handler(BaseHTTPRequestHandler):
                     for v in json.loads(body).get("voices", [])
                 ]
                 if voices:
-                    return self.json(200, {"voices": voices, "source": "account"})
+                    return self.json(200, {"voices": preferred_first(voices), "source": "account"})
             # Scoped keys can synthesize without being allowed to list voices.
             show_all = self.path.endswith("all=1")
             voices = PREMADE if show_all else [v for v in PREMADE if v.get("soft")]
-            self.json(200, {"voices": voices, "source": "builtin"})
+            self.json(200, {"voices": preferred_first(voices), "source": "builtin"})
         else:
             self.json(404, {"detail": "not found"})
 
