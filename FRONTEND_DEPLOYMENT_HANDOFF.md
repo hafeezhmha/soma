@@ -35,6 +35,15 @@ local VectorAI service. Vercel hosts the Next.js frontend only.
    one at runtime with `bash scripts/public-demo-tunnel.sh`, then paste the URL
    it prints into this Vercel variable.
 
+   **Current live demo tunnel (this session):**
+
+   ```text
+   https://upgrade-wannabe-tidings.ngrok-free.dev
+   ```
+
+   This URL is temporary and will stop working when ngrok exits or assigns a
+   new URL. Replace it in Vercel whenever the tunnel changes.
+
 The repository includes `frontend/vercel.json` with Next.js detection and basic
 security headers. Do not change the project root to the repository root unless
 you also intentionally redesign the monorepo build.
