@@ -13,6 +13,10 @@ type BodyMapProps = {
   onRemove: (id: string) => void;
   onSelect: (id: string) => void;
   readOnly?: boolean;
+  /** When given, tapping the figure opens the 3D body studio instead of
+      dropping a mark directly. The "Choose an area instead" control below still
+      places marks without WebGL, so this never becomes the only way in. */
+  onOpenStudio?: (region?: string) => void;
 };
 
 // A single, quiet contour: a neutral standing body, with room between arms and torso.
@@ -38,7 +42,7 @@ const bodyOutline = `M44 29
   L18 74 L25 49 C26.5 44 29 40 33.5 38.5
   C37.5 37 42 36 44 34 Z`;
 
-export default function BodyMap({ marks, selectedId, onPlace, onRemove, onSelect, readOnly = false }: BodyMapProps) {
+export default function BodyMap({ marks, selectedId, onPlace, onRemove, onSelect, readOnly = false, onOpenStudio }: BodyMapProps) {
   const id = useId();
   const svgRef = useRef<SVGSVGElement>(null);
   const gesture = useRef<{ mark: Mark; pointerId: number; dragged: boolean } | null>(null);
@@ -72,6 +76,7 @@ export default function BodyMap({ marks, selectedId, onPlace, onRemove, onSelect
 
   const startPlacement = (event: PointerEvent<SVGSVGElement>) => {
     if (readOnly || !event.isPrimary || event.button !== 0 || !(event.target instanceof SVGPathElement)) return;
+    if (onOpenStudio) { onOpenStudio(selected?.region); return; }
     const point = pointForEvent(event);
     if (!point) return;
     const mark = newMark(point.x, point.y);
@@ -146,7 +151,9 @@ export default function BodyMap({ marks, selectedId, onPlace, onRemove, onSelect
         ))}
       </div>
 
-      {!readOnly && <p className="soma-map__hint">Tap where you feel it.<br /><span>Drag outward to show how far it spreads.</span></p>}
+      {!readOnly && (onOpenStudio
+        ? <p className="soma-map__hint">Tap the body to open it.<br /><span>You can turn it and draw the sensation where you feel it.</span></p>
+        : <p className="soma-map__hint">Tap where you feel it.<br /><span>Drag outward to show how far it spreads.</span></p>)}
 
       {marks.length > 0 && <div className="soma-map__selection">
         <div className="soma-map__marks" aria-label="Marked sensations">

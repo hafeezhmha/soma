@@ -26,3 +26,9 @@ export function bodyRegionAt(x: number, y: number): string {
 export function spreadForDistance(distance: number): number {
   return Math.round(Math.max(4, Math.min(26, distance)) * 10) / 10;
 }
+
+/** Where a region sits on the 2D map, so a 3D-painted region becomes a mark. */
+export function pointForRegion(region: string): { x: number; y: number } {
+  const match = bodyAreas.find((area) => area.name.toLowerCase() === region.toLowerCase());
+  return match ? { x: match.x, y: match.y } : { x: 50, y: 54 };
+}

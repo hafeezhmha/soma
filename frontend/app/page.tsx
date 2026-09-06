@@ -5,6 +5,12 @@ import type { CSSProperties } from 'react';
 import { cancelSession, completeExploration, completeRegulation, fetchParts, getProfile, hasConfiguredApi, saveSession, sendChatMessage, setBody, setRecheck, speakText, startSession, transcribeAudio, updateProfile } from '@/lib/api';
 import { isBodyStage, markFromPoint, requiresLeaveConfirmation, stageAfter } from '@/lib/flow';
 import BodyMap from '@/components/BodyMap';
+import dynamic from 'next/dynamic';
+import { pointForRegion } from '@/components/body-map-geometry';
+import type { StudioResult } from '@/components/BodyStudio';
+
+// three.js is a large dependency and only needed once the studio is opened.
+const BodyStudio = dynamic(() => import('@/components/BodyStudio'), { ssr: false });
 import SomaOrb from '@/components/SomaOrb';
 import { InnerWeather, MarkQualities, NavigationIcon, PartCharacter } from '@/components/DivyaControls';
 import WeeklyHistory from '@/components/WeeklyHistory';
@@ -402,6 +408,24 @@ export default function Home() {
   };
   const canEditBody = !loading && !voiceInputActive && isBodyStage(stage);
   const placeMark = (mark: Mark) => { if (!canEditBody) return; if (marks.length >= 10 && !marks.some((item) => item.id === mark.id)) { setApiError('You can keep up to ten marks in a check-in. Select a mark to edit it.'); return; } setMarks((current) => current.some((item) => item.id === mark.id) ? current.map((item) => item.id === mark.id ? mark : item) : [...current, mark]); setSelectedMarkId(mark.id); };
+  const [studioOpen, setStudioOpen] = useState(false);
+  const closeStudio = () => setStudioOpen(false);
+  const finishStudio = (result: StudioResult | null) => {
+    setStudioOpen(false);
+    if (!result) return;
+    const point = pointForRegion(result.region);
+    // Reuse the mark already on this region rather than stacking a second one.
+    const existing = marks.find((mark) => mark.region === result.region);
+    placeMark({
+      id: existing?.id ?? `mark-${crypto.randomUUID()}`,
+      x: point.x,
+      y: point.y,
+      spread: existing?.spread ?? 14,
+      region: result.region,
+      color: result.color,
+    });
+  };
+
   const removeMark = (id: string) => { if (!canEditBody) return; setMarks((current) => current.filter((mark) => mark.id !== id)); setSelectedMarkId(undefined); };
   const answerByVoice = (text: string) => {
     setApiError(''); setHeardAnswer('');
@@ -480,7 +504,7 @@ export default function Home() {
     </section>}
 
     {stage !== 'landing' && stage !== 'safety' && stage !== 'summary' && stage !== 'dashboard' && stage !== 'part' && <div className="flow-layout">
-      <aside className="flow-map"><p className="eyebrow">Body map</p>{stage === 'locate' && <><h1>Where do you feel it?</h1><p className="body-copy">Tap anywhere inside the body. Then shape the sensation.</p></>}<BodyMap readOnly={!canEditBody} marks={marks} selectedId={selectedMarkId} onPlace={placeMark} onRemove={removeMark} onSelect={setSelectedMarkId} />{canEditBody && <MarkQualities mark={selectedMark} disabled={loading || voiceInputActive} onChange={placeMark} />}</aside>
+      <aside className="flow-map"><p className="eyebrow">Body map</p>{stage === 'locate' && <><h1>Where do you feel it?</h1><p className="body-copy">Tap anywhere inside the body. Then shape the sensation.</p></>}<BodyMap readOnly={!canEditBody} marks={marks} selectedId={selectedMarkId} onPlace={placeMark} onRemove={removeMark} onSelect={setSelectedMarkId} onOpenStudio={canEditBody ? () => setStudioOpen(true) : undefined} />{canEditBody && <MarkQualities mark={selectedMark} disabled={loading || voiceInputActive} onChange={placeMark} />}</aside>
       <section className="flow-panel" aria-live="polite">
         {['locate', 'sensation', 'intensity', 'recheck', 'explore', 'name'].includes(stage) && <div className="spoken-answer">{voiceAnswerControl}{heardAnswer && <p className="caption">Heard: “{heardAnswer}” · {stage === 'locate' ? 'Where would you like to mark that on the body?' : stage === 'sensation' ? 'Which sensations would you like to select?' : stage === 'intensity' || stage === 'recheck' ? 'What number would you choose on the slider?' : 'Check your words below, then continue.'}</p>}</div>}
         {voiceCaption && stage !== 'regulate' && <p className="voice-caption">{voiceCaption}</p>}
@@ -500,6 +524,7 @@ export default function Home() {
     {stage === 'dashboard' && <Dashboard parts={parts} error={apiError} onOpen={(part) => { setActivePart(part); setStage('part'); }} onBegin={() => { reset(); setStage('landing'); }} />}
     {stage === 'part' && activePart && <PartPage part={activePart} onBack={() => setStage('dashboard')} />}
     </>}
+    {studioOpen && <BodyStudio color={selectedMark?.color} focusRegion={selectedMark?.region} onClose={closeStudio} onDone={finishStudio} />}
     {stage !== 'safety' && <nav className="bottom-nav" aria-label="Main navigation">
       <button aria-current={!chatOpen && stage === 'landing' ? 'page' : undefined} disabled={loading || voiceInputActive} onClick={() => navigateAway('home')}><NavigationIcon kind="checkin" />Check in</button>
       <button aria-current={!chatOpen && isBodyStage(stage) ? 'page' : undefined} disabled={loading || voiceInputActive || !isBodyStage(stage)} onClick={() => { stopVoice(); setChatOpen(false); }} title="Body mapping is available during the body steps"><NavigationIcon kind="body" />Body</button>
