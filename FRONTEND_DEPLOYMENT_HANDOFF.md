@@ -27,6 +27,14 @@ local VectorAI service. Vercel hosts the Next.js frontend only.
    Use the tunnel's HTTPS origin without a trailing slash. `NEXT_PUBLIC_*`
    values are included at build time, so redeploy after changing this value.
 
+   **Important:** `NEXT_PUBLIC_API_URL` is the public HTTPS **backend tunnel**
+   URL. Do not enter `localhost`, and do not enter the Vercel frontend URL in
+   this field.
+
+   There is no permanent backend tunnel URL stored in this repository. Generate
+   one at runtime with `bash scripts/public-demo-tunnel.sh`, then paste the URL
+   it prints into this Vercel variable.
+
 The repository includes `frontend/vercel.json` with Next.js detection and basic
 security headers. Do not change the project root to the repository root unless
 you also intentionally redesign the monorepo build.
@@ -105,7 +113,8 @@ curl -fsS https://REPLACE_WITH_TUNNEL_URL/health
 
 ## 4. Connect Vercel and local API
 
-1. Set Vercel `NEXT_PUBLIC_API_URL` to the tunnel URL.
+1. Set Vercel `NEXT_PUBLIC_API_URL` to the backend tunnel URL. This is the only
+   backend URL the frontend needs.
 2. Update the root `.env` so `CORS_ORIGINS` contains the exact Vercel origin:
 
    ```text
