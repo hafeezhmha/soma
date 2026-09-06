@@ -18,10 +18,16 @@ export type Mark = {
   y: number;
   spread: number;
   region: string;
+  color?: string;
+  textures?: string[];
+  movement?: string;
 };
 
 export type Session = {
   sessionId?: string;
+  moods?: string[];
+  weather?: string;
+  marks?: Mark[];
   displayName?: string;
   sourceSensation: string;
   bodyLocation: string;

@@ -101,6 +101,46 @@ def test_safety_interrupts_before_normal_flow():
     ).status_code == 409
 
 
+def test_chat_message_can_preserve_guided_stage_and_initial_statement():
+    client = _client()
+    profile = client.post("/profiles").json()
+    headers = {"Authorization": f"Bearer {profile['profile_token']}"}
+    session_id = client.post("/sessions", headers=headers, json={}).json()["session_id"]
+
+    response = client.post(
+        f"/sessions/{session_id}/messages",
+        headers=headers,
+        json={"text": "Can you stay with me for a moment?", "advance_stage": False},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["current_stage"] == "CHECK_IN"
+    assert response.json()["suggested_next_stage"] == "CHECK_IN"
+    assert response.json()["ui_action"] is None
+    session = client.get(f"/sessions/{session_id}", headers=headers).json()
+    assert session["stage"] == "CHECK_IN"
+    assert session["initial_statement"] is None
+
+
+def test_chat_safety_still_transitions_to_safety_when_stage_advance_disabled():
+    client = _client()
+    profile = client.post("/profiles").json()
+    headers = {"Authorization": f"Bearer {profile['profile_token']}"}
+    session_id = client.post("/sessions", headers=headers, json={}).json()["session_id"]
+
+    response = client.post(
+        f"/sessions/{session_id}/messages",
+        headers=headers,
+        json={"text": "I want to kill myself tonight", "advance_stage": False},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["current_stage"] == "SAFETY"
+    session = client.get(f"/sessions/{session_id}", headers=headers).json()
+    assert session["stage"] == "SAFETY"
+    assert session["safety"]["flagged"] is True
+
+
 def test_cancel_session_removes_abandoned_transcript():
     client = _client()
     profile = client.post("/profiles").json()

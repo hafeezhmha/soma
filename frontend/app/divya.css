@@ -1,0 +1,76 @@
+/* Divya Design/Main.dc.html is the visual source of truth. Keep the app fluid,
+   rather than copying the prototype's fixed 390 × 844 clipping container. */
+.divya-app { max-width: 760px; margin: 0 auto; padding: 0 32px 110px; }
+.divya-app.app-shell--companion { padding-right: 32px; }
+.divya-app .site-header { min-height: 72px; margin-right: 0; }
+.divya-app .page-section { max-width: 520px; }
+.divya-app .landing { padding: 36px 0; min-height: auto; }
+.divya-app h1 { font-size: 36px; line-height: 1.06; }
+.divya-app .landing h1 { max-width: 9ch; }
+.divya-app .eyebrow { margin-bottom: 18px; }
+.divya-app .chip-grid { gap: 10px; margin-top: 16px; }
+.divya-app .chip { min-height: 44px; padding: 10px 18px; font-size: 13px; }
+.divya-app .chip-active { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.divya-app .inner-weather > .eyebrow { margin-top: 40px; margin-bottom: 8px; }
+.divya-app .inner-weather .body-copy { margin-top: 0; }
+.divya-app .weather-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.divya-app .weather-options button { min-height: 48px; border: 1px solid var(--line); border-radius: 16px; padding: 12px 4px; background: var(--bg); color: var(--ink-body); font-size: 12px; }
+.divya-app .weather-options button[aria-pressed=true] { background: var(--surface); border-color: var(--accent); color: var(--ink); }
+.divya-app .lead { margin-top: 32px; }
+.divya-app .optional-name { margin-top: 32px; }
+.divya-app .flow-layout { display: flex; flex-direction: column; max-width: 520px; min-height: 0; padding: 32px 0; gap: 24px; }
+.divya-app .flow-map { position: static; min-height: 0; padding: 0; border: 0; width: 100%; }
+.divya-app .flow-panel { width: 100%; padding: 0; }
+.divya-app:not([data-stage=locate]) .flow-map { display: none; }
+.divya-app .soma-map { margin: 0 auto; }
+.divya-app .soma-map__figure { width: min(100%, 180px); }
+.divya-app .mark-qualities { border: 0; padding: 0; margin: 32px 0 0; }
+.divya-app .mark-qualities .input-label { margin-top: 24px; }
+.divya-app .color-options { display: flex; flex-wrap: wrap; gap: 10px; }
+.divya-app .color-options button { width: 36px; height: 36px; border: 5px solid var(--bg); border-radius: 50%; outline: 1px solid transparent; box-sizing: content-box; }
+.divya-app .color-options button[aria-pressed=true] { outline-color: var(--ink); }
+.divya-app .color-options button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.divya-app .bottom-nav { position: fixed; z-index: 40; bottom: 0; left: 50%; transform: translateX(-50%); display: flex; width: min(100%, 696px); min-height: 68px; padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid var(--line-quiet); background: var(--bg); }
+.divya-app .bottom-nav button { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: var(--ink-quiet); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding: 10px 0; }
+.divya-app .bottom-nav button span { font-size: 22px; line-height: 1; }
+.divya-app .bottom-nav button[aria-current=page] { color: var(--accent); background: var(--surface); }
+.divya-app .bottom-nav button:disabled { opacity: .45; }
+.divya-app .soma-chat { padding: 32px 0; }
+.divya-app .chat-messages { display: flex; flex-direction: column; gap: 14px; margin: 24px 0; }
+.divya-app .chat-bubble { max-width: 85%; margin: 0; padding: 12px 15px; font-family: "Newsreader", Georgia, serif; font-size: 17px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.divya-app .chat-bubble--soma { align-self: flex-start; background: var(--surface); border-radius: 2px 16px 16px 16px; }
+.divya-app .chat-bubble--user { align-self: flex-end; background: var(--accent); color: var(--bg); border-radius: 16px 16px 2px 16px; }
+.divya-app .chat-quick { display: flex; flex-wrap: wrap; gap: 8px; }
+.divya-app .chat-compose { border-top: 1px solid var(--line-quiet); padding-top: 20px; margin: 24px 0; }
+.divya-app .dashboard, .divya-app .part-page, .divya-app .summary { padding-top: 32px; }
+.divya-app .dashboard-heading { display: block; }
+.divya-app .dashboard-heading > .button { margin-top: 20px; }
+.divya-app .parts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
+.divya-app .part-card { display: flex; flex-direction: column; padding: 14px; min-height: 0; gap: 8px; background: var(--surface); border-color: var(--line-quiet); }
+.divya-app .part-character-art { width: 48px; height: 48px; }
+.divya-app .part-character { display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 0; }
+.divya-app .part-character .part-character-art { width: 88px; height: 88px; }
+.divya-app .part-description, .divya-app .part-arrow { display: none; }
+.divya-app .weekly-history { margin: 32px 0; padding-bottom: 24px; border-bottom: 1px solid var(--line-quiet); }
+.divya-app .weekly-history h2 { font: 300 28px "Newsreader", Georgia, serif; margin: 0; }
+.divya-app .weekly-history svg { width: 100%; }
+.divya-app .week-days { display: flex; justify-content: space-around; font-size: 10px; }
+.divya-app .week-days small { display: block; text-align: center; margin-top: 5px; }
+@media (max-width: 1100px) {
+  .divya-app { margin-left: 0; width: calc(100% - 108px); }
+  .divya-app > .soma-orb { width: 96px; right: 6px; }
+  .divya-app > .soma-orb .soma-orb__control { width: 80px; }
+  .divya-app .bottom-nav { left: 0; transform: none; width: calc(100% - 108px); }
+}
+@media (max-width: 600px) {
+  .divya-app, .divya-app.app-shell--companion { width: 100%; padding: 0 20px 112px; margin: 0; }
+  .divya-app .site-header { padding-right: 58px; }
+  /* On phones, dock the companion beside the header so content keeps full width. */
+  .divya-app > .soma-orb { top: 36px; right: max(8px, env(safe-area-inset-right)); width: 48px; z-index: 35; }
+  .divya-app > .soma-orb .soma-orb__control { width: 44px; }
+  .divya-app > .soma-orb .soma-orb__status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .divya-app .bottom-nav { width: 100%; }
+  .divya-app .landing { padding-top: 28px; }
+  .divya-app .header-actions { gap: 8px; }
+  .divya-app .header-actions .text-link { font-size: 11px; }
+}

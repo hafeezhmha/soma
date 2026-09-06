@@ -61,6 +61,7 @@ class CreateSessionRequest(BaseModel):
 
 class MessageRequest(BaseModel):
     text: str = Field(min_length=1, max_length=12000)
+    advance_stage: bool = True
 
 
 class BodyMarkRequest(BaseModel):

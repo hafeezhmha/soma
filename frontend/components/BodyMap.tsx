@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-import type { PointerEvent } from 'react';
+import type { CSSProperties, PointerEvent } from 'react';
 import type { Mark } from '@/lib/types';
 import { bodyAreas, bodyRegionAt, spreadForDistance } from './body-map-geometry';
 import './body-map.css';
@@ -126,9 +126,9 @@ export default function BodyMap({ marks, selectedId, onPlace, onRemove, onSelect
           <desc id={`${id}-description`}>{readOnly ? `${marks.length} marked sensations. ${marks.map((mark) => mark.region).join(', ')}.` : 'Tap inside the outline to place a sensation. Drag outward as you place it to show its spread. You can also choose an area below.'}</desc>
           <path className="soma-map__outline" d={bodyOutline} />
           {marks.map((mark) => (
-            <g key={mark.id} className="soma-map__ink" aria-hidden="true">
-              <circle className={`soma-map__spread${selected?.id === mark.id ? ' soma-map__spread--selected' : ''}`} cx={mark.x} cy={mark.y} r={mark.spread} />
-              <circle className="soma-map__dot" cx={mark.x} cy={mark.y} r="2.3" />
+            <g key={mark.id} className="soma-map__ink" style={{ '--mark-color': mark.color || 'var(--accent)' } as CSSProperties} aria-hidden="true">
+              <circle className={`soma-map__spread${selected?.id === mark.id ? ' soma-map__spread--selected' : ''}`} style={{ stroke: 'var(--mark-color)', strokeWidth: mark.textures?.includes('Tight') ? 2 : 1, strokeDasharray: mark.textures?.some((texture) => ['Buzzing', 'Fluttery'].includes(texture)) ? '2 2' : undefined }} cx={mark.x} cy={mark.y} r={mark.movement === 'Spreading' ? Math.max(mark.spread, 20) : mark.spread} />
+              <circle className="soma-map__dot" style={{ fill: mark.textures?.includes('Numb') ? 'none' : 'var(--mark-color)', stroke: 'var(--mark-color)' }} cx={mark.x} cy={mark.y} r={mark.textures?.includes('Heavy') ? 4 : 2.3} />
             </g>
           ))}
           {draft && !readOnly && <g className="soma-map__ink" aria-hidden="true"><circle className="soma-map__spread soma-map__spread--selected" cx={draft.x} cy={draft.y} r={draft.spread} /><circle className="soma-map__dot" cx={draft.x} cy={draft.y} r="2.3" /></g>}

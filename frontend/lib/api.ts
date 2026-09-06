@@ -48,6 +48,7 @@ async function profileToken(): Promise<string> {
 }
 
 const withToken = (token: string): RequestInit => ({ headers: { Authorization: `Bearer ${token}` } });
+const latestColor = (attributes: Array<{ key: string; value: string }>): string => [...attributes].reverse().find((attribute) => attribute.key === 'colour')?.value ?? '#4a7360';
 
 export async function getProfile(): Promise<{ profile_id: string; display_name: string }> {
   const token = await profileToken();
@@ -76,6 +77,11 @@ export async function cancelSession(sessionId: string): Promise<void> {
   if (!apiUrl) return;
   const token = await profileToken();
   await request(`/sessions/${encodeURIComponent(sessionId)}`, { method: 'DELETE', ...withToken(token) });
+}
+
+export async function sendChatMessage(sessionId: string, text: string): Promise<AgentReply> {
+  const token = await profileToken();
+  return request(`/sessions/${encodeURIComponent(sessionId)}/messages`, { method: 'POST', ...withToken(token), body: JSON.stringify({ text, advance_stage: false }) });
 }
 
 export async function setBody(sessionId: string, session: Session, includeSensation = false, includeIntensity = false): Promise<{ message: string }> {
@@ -132,7 +138,13 @@ export async function saveSession(session: Session): Promise<{ session: Session;
     if (!sessionId) throw new Error('Start the check-in before saving it.');
     const partResponse = await request<{ safety?: { flagged: boolean }; message?: string; current_stage?: string }>(`/sessions/${sessionId}/parts`, {
       method: 'POST', ...withToken(token),
-      body: JSON.stringify({ name: session.partName, attributes: [{ key: 'sensation', value: session.sensation }] }),
+      body: JSON.stringify({ name: session.partName, attributes: [
+        { key: 'sensation', value: session.sensation },
+        ...(session.moods?.length ? [{ key: 'moods', value: session.moods.join(', ') }] : []),
+        ...(session.weather ? [{ key: 'inner_weather', value: session.weather }] : []),
+        ...(session.mark.color ? [{ key: 'colour', value: session.mark.color }] : []),
+        ...(session.marks ?? []).map((mark, index) => ({ key: `body_mark_${index + 1}`, value: JSON.stringify(mark) })),
+      ] }),
     });
     if (partResponse.safety?.flagged) {
       return { session, safety: partResponse as AgentReply };
@@ -155,7 +167,7 @@ export async function fetchParts(): Promise<Part[]> {
     return response.parts.map((part) => ({
       id: part.id,
       name: part.name,
-      color: '#4a7360',
+      color: latestColor(part.attributes),
       description: 'A part you have taken time to notice.',
       activations: response.activations.filter((activation) => activation.part_id === part.id).length,
       lastSeen: response.activations.find((activation) => activation.part_id === part.id)?.activated_at ? new Date(response.activations.find((activation) => activation.part_id === part.id)!.activated_at!).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Not yet seen',
@@ -172,7 +184,7 @@ export async function fetchPart(id: string): Promise<Part | undefined> {
   try {
     const token = await profileToken();
     const response = await request<{ id: string; name: string; attributes: Array<{ key: string; value: string; recorded_at?: string }>; activations: Activation[] }>(`/parts/${encodeURIComponent(id)}`, withToken(token));
-    return { id: response.id, name: response.name, color: '#4a7360', description: 'A part you have taken time to notice.', activations: response.activations.length, lastSeen: response.activations[response.activations.length - 1]?.activated_at ? new Date(response.activations[response.activations.length - 1].activated_at!).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Not yet seen', attributes: response.attributes, activationsList: response.activations };
+    return { id: response.id, name: response.name, color: latestColor(response.attributes), description: 'A part you have taken time to notice.', activations: response.activations.length, lastSeen: response.activations[response.activations.length - 1]?.activated_at ? new Date(response.activations[response.activations.length - 1].activated_at!).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Not yet seen', attributes: response.attributes, activationsList: response.activations };
   } catch {
     if (apiUrl) throw new Error('This part could not be loaded. Check the connection and try again.');
     return demoParts.find((part) => part.id === id) ?? demoParts[0];

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import './divya.css';
 
 export const metadata: Metadata = {
   title: 'SOMA — notice what is happening',

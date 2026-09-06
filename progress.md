@@ -2,6 +2,33 @@
 
 Last updated: 2026-09-06
 
+## Divya design alignment
+
+Primary visual reference: `Divya Design/Main.dc.html` (all screens and prototype logic reviewed), supported by its README. Divya's layout takes priority over the earlier desktop-first design; the app name remains **SOMA**. Frontend-design guidance informed the responsive adaptation rather than copying the prototype's fixed 390 × 844 viewport.
+
+| Area | Before | Divya reference / implementation now |
+| --- | --- | --- |
+| Check-in | Free-text opening | “How are you feeling?”, multi-select mood chips, Stormy/Cloudy/Clearing/Sunny inner weather; optional text/voice retained |
+| Body | Location, spread, separate sensation step | Colour palette, multi-select textures, movement per mark; accessible map placement/spread retained |
+| Navigation | Header links and linear steps | Persistent Check in / Body / SOMA / Parts bottom navigation; guided stage restrictions and confirmation before leaving an unfinished session |
+| SOMA | Narrated prompts only | Chat bubbles, quick prompts, typed/voice draft, real message API; chat preserves guided stage and safety override |
+| Parts | Text-heavy cards | Compact two-column character tiles using Divya's placeholder-art approach and saved colours |
+| Week | Activation rows | Actual seven-day recheck-intensity chart and empty state; no seeded user history or inferred regulation labels |
+| Responsive layout | Wide split layout, large orb gutter | Compact single-column layout; right-side orb on desktop, small header orb on phones; sticky header and bottom navigation |
+
+Implemented persistence: moods, inner weather, selected colour, and up to ten complete per-mark records are saved as part attributes when the reflection is saved. Existing structured session/activation fields still store the primary mark. These are not separate queryable mark tables, and unfinished drafts are not restored after refresh. Colours do not imply emotions; voice does not select keywords or infer user choices.
+
+Intentional differences / remaining work:
+
+- Keep regulation → recheck → exploration before saving/naming; Divya's prototype bypasses these safety-oriented guided steps.
+- Do not copy the prototype's canned chat replies or prefilled named parts. Chat uses the existing Claude-backed service (with its existing fallback behavior).
+- The source's window-of-tolerance chart is sample data. The implemented chart reports recorded intensity only; no clinical category is inferred from intensity.
+- Free switching back to completed body steps, persistent unfinished drafts, editable/releasable parts, and generated character artwork remain follow-up work. The UI does not promise those unsupported capabilities.
+- Divya's texture choices support multiple selections here, preserving the user's earlier request. Movement is saved; only Spreading currently changes the mark halo, while texture changes ring/dot appearance.
+- Browser visual/microphone verification is pending: in-app Node runtime unavailable and Chrome connection reports Google Chrome is not installed. No browser was installed.
+
+Validation: all 24 Python tests and 12 frontend tests pass; TypeScript, ESLint, and `git diff --check` pass. Local frontend responds HTTP 200. Frontend API tests cover chat stage preservation, saved design attributes, and latest saved colour; backend tests cover chat safety overrides. Independent review found two issues, both fixed: normalize non-advancing chat response metadata, and use the latest saved colour. A production build was deliberately not run alongside the active development server.
+
 ## Signed-off product decisions
 
 - Public, shareable multi-user web experience.

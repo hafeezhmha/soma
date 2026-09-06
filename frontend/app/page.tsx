@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { cancelSession, completeExploration, completeRegulation, fetchParts, getProfile, hasConfiguredApi, saveSession, setBody, setRecheck, speakText, startSession, transcribeAudio, updateProfile } from '@/lib/api';
+import { cancelSession, completeExploration, completeRegulation, fetchParts, getProfile, hasConfiguredApi, saveSession, sendChatMessage, setBody, setRecheck, speakText, startSession, transcribeAudio, updateProfile } from '@/lib/api';
 import { markFromPoint, stageAfter } from '@/lib/flow';
 import BodyMap from '@/components/BodyMap';
 import SomaOrb from '@/components/SomaOrb';
+import { InnerWeather, MarkQualities, NavigationIcon, PartCharacter } from '@/components/DivyaControls';
+import WeeklyHistory from '@/components/WeeklyHistory';
 import { Mark, Part, Session, Stage } from '@/lib/types';
 
 const sensations = ['Tight', 'Heavy', 'Hot', 'Cold', 'Fluttery', 'Numb', 'Pressure', 'Tingling', 'Something else'];
@@ -166,7 +168,7 @@ function VoiceButton({ disabled, busy, onActivity, onPhase, onLevel, onStart, on
   };
   if (disabled) return <p className="voice-disabled">Voice input unavailable · type instead</p>;
   if (busy) return null;
-  return <button className={`hold-button ${recording ? 'hold-button-recording' : ''}`} disabled={transcribing} onPointerDown={startPress} onPointerUp={end} onPointerLeave={end} onPointerCancel={end} onBlur={end} onKeyDown={(event) => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) { event.preventDefault(); startPress(); } }} onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); end(); } }} aria-label="Hold to record your answer" aria-pressed={recording}>
+  return <button type="button" className={`hold-button ${recording ? 'hold-button-recording' : ''}`} disabled={transcribing} onPointerDown={startPress} onPointerUp={end} onPointerLeave={end} onPointerCancel={end} onBlur={end} onKeyDown={(event) => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) { event.preventDefault(); startPress(); } }} onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); end(); } }} aria-label="Hold to record your answer" aria-pressed={recording}>
     <span className={`voice-visual ${recording ? 'voice-visual-live' : ''}`} aria-hidden="true">
       {recording ? levels.map((level, index) => <span className="voice-bar" key={index} style={{ '--voice-level': level } as CSSProperties} />) : <span className="voice-idle-dot" />}
     </span>
@@ -178,6 +180,12 @@ export default function Home() {
   const [stage, setStage] = useState<Stage>('landing');
   const [displayName, setDisplayName] = useState('');
   const [whatIsHappening, setWhatIsHappening] = useState('');
+  const [moods, setMoods] = useState<string[]>([]);
+  const [weather, setWeather] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatDraft, setChatDraft] = useState('');
+  const [chat, setChat] = useState<Array<{ who: 'user' | 'soma'; text: string }>>([]);
+  const initialStatement = [moods.length ? `I'm feeling ${moods.join(', ')}.` : '', weather ? `My inner weather is ${weather.toLowerCase()}.` : '', whatIsHappening.trim()].filter(Boolean).join(' ');
   const [marks, setMarks] = useState<Mark[]>([]);
   const [selectedMarkId, setSelectedMarkId] = useState<string>();
   const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
@@ -232,6 +240,7 @@ export default function Home() {
   const selectedMark = useMemo(() => marks.find((mark) => mark.id === selectedMarkId) ?? marks[0], [marks, selectedMarkId]);
 
   const reset = () => {
+    setMoods([]); setWeather(''); setChat([]); setChatDraft(''); setChatOpen(false);
     operationRef.current += 1; stopVoice(); setLoading(false); setVoiceInputActive(false); setVoiceCaption(''); setVoiceNotice('');
     setIntensityBefore(6); setIntensityAfter(4); setExercise('Slow breathing');
     setStage('landing'); setMarks([]); setSelectedMarkId(undefined); setSelectedSensations([]); setPartName(''); setConcern(''); setRegulationGuidance(''); setSafetyMessage(''); setWhatIsHappening(''); setSavedSession(undefined); setApiSessionId(undefined); setApiError('');
@@ -244,6 +253,7 @@ export default function Home() {
     if (incompleteSession) { try { await cancelSession(apiSessionId); } catch { /* Leaving remains available offline. */ } }
   };
   const openDashboard = async () => {
+    setChatOpen(false);
     operationRef.current += 1; stopVoice(); setLoading(false); setVoiceCaption('');
     const incompleteSession = apiSessionId && !['summary', 'dashboard', 'part'].includes(stage);
     setStage('dashboard');
@@ -321,18 +331,19 @@ export default function Home() {
       if (!controller.signal.aborted) setVoicePending(false);
     }
   };
-  const currentSession = (): Session => ({ displayName: displayName.trim() || undefined, sourceSensation: whatIsHappening.trim() || 'A sensation I noticed', bodyLocation: selectedMark?.region || 'chest', mark: selectedMark ?? markFromPoint(50, 68, 'chest'), sensation: sensation || 'something I noticed', intensityBefore, intensityAfter, partName: partName.trim() || 'Unnamed part', concern: concern.trim() || undefined, date: new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date()), sessionId: apiSessionId });
+  const currentSession = (): Session => ({ displayName: displayName.trim() || undefined, moods, weather, marks, sourceSensation: initialStatement || 'A sensation I noticed', bodyLocation: selectedMark?.region || 'chest', mark: selectedMark ?? markFromPoint(50, 68, 'chest'), sensation: sensation || 'something I noticed', intensityBefore, intensityAfter, partName: partName.trim() || 'Unnamed part', concern: concern.trim() || undefined, date: new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date()), sessionId: apiSessionId });
   const startCheckin = async () => {
-    if (!whatIsHappening.trim() || loading || voiceInputActive) return;
+    if (!initialStatement || loading || voiceInputActive) return;
     setLoading(true); setApiError('');
     const operation = ++operationRef.current;
     try {
       if (hasConfiguredApi()) {
         if (displayName.trim()) await updateProfile(displayName.trim());
         if (operation !== operationRef.current) return;
-        const result = await startSession(whatIsHappening.trim());
+        const result = await startSession(initialStatement);
         if (operation !== operationRef.current) { void cancelSession(result.sessionId).catch(() => undefined); return; }
         setApiSessionId(result.sessionId);
+        setChat([{ who: 'user', text: initialStatement }, { who: 'soma', text: result.response.message }]);
         if (result.response.safety.flagged) {
           setSafetyMessage(result.response.message);
           setStage('safety');
@@ -386,17 +397,32 @@ export default function Home() {
     } catch (error) { if (operation === operationRef.current) setApiError(error instanceof Error ? error.message : 'That step could not be saved. Try again.'); } finally { if (operation === operationRef.current) setLoading(false); }
   };
   const canEditBody = !loading && ['locate', 'sensation', 'intensity'].includes(stage);
-  const placeMark = (mark: Mark) => { if (!canEditBody) return; setMarks((current) => current.some((item) => item.id === mark.id) ? current.map((item) => item.id === mark.id ? mark : item) : [...current, mark]); setSelectedMarkId(mark.id); };
+  const placeMark = (mark: Mark) => { if (!canEditBody) return; if (marks.length >= 10 && !marks.some((item) => item.id === mark.id)) { setApiError('You can keep up to ten marks in a check-in. Select a mark to edit it.'); return; } setMarks((current) => current.some((item) => item.id === mark.id) ? current.map((item) => item.id === mark.id ? mark : item) : [...current, mark]); setSelectedMarkId(mark.id); };
   const removeMark = (id: string) => { if (!canEditBody) return; setMarks((current) => current.filter((mark) => mark.id !== id)); setSelectedMarkId(undefined); };
   const answerByVoice = (text: string) => {
     setApiError(''); setHeardAnswer('');
     if (!text.trim()) { setApiError('I didn’t catch that. Hold to talk and try again.'); return; }
-    if (stage === 'landing') setWhatIsHappening(text);
+    if (chatOpen) setChatDraft(text);
+    else if (stage === 'landing') setWhatIsHappening(text);
     else if (stage === 'explore') setConcern(text);
     else if (stage === 'name') setPartName(text);
     setHeardAnswer(text);
   };
   const voiceAnswerControl = <VoiceButton key={stage} disabled={!hasConfiguredApi()} busy={loading} onActivity={setVoiceInputActive} onPhase={setInputPhase} onLevel={setVoiceLevel} onStart={() => { stopVoice(); setApiError(''); setHeardAnswer(''); }} onTranscript={answerByVoice} onError={setApiError} />;
+  const sendChat = async (draft = chatDraft) => {
+    if (!draft.trim() || !apiSessionId || loading || voiceInputActive) return;
+    const operation = ++operationRef.current;
+    stopVoice(); setLoading(true); setApiError('');
+    try {
+      const reply = await sendChatMessage(apiSessionId, draft.trim());
+      if (operation !== operationRef.current) return;
+      setChatDraft('');
+      if (reply.safety.flagged) { setChatOpen(false); setSafetyMessage(reply.message); setStage('safety'); return; }
+      setChat((current) => [...current, { who: 'user', text: draft.trim() }]);
+      await announce(reply.message, () => setChat((current) => [...current, { who: 'soma', text: reply.message }]));
+    } catch (error) { if (operation === operationRef.current) setApiError(error instanceof Error ? error.message : 'Your message could not be sent. Try again.'); }
+    finally { if (operation === operationRef.current) setLoading(false); }
+  };
   const save = async () => {
     if (loading || voiceInputActive) return;
     const operation = ++operationRef.current;
@@ -411,19 +437,31 @@ export default function Home() {
     } catch (error) { if (operation === operationRef.current) setApiError(error instanceof Error ? error.message : 'Your reflection could not be saved. Try again.'); } finally { if (operation === operationRef.current) setLoading(false); }
   };
 
-  return <main className={`app-shell ${!['safety', 'dashboard', 'part', 'summary'].includes(stage) ? 'app-shell--companion' : ''}`}>
+  return <main data-stage={stage} className={`app-shell divya-app ${!['safety', 'dashboard', 'part', 'summary'].includes(stage) ? 'app-shell--companion' : ''}`}>
     <Header onDashboard={() => { void openDashboard(); }} onHome={() => { void stop(); }} stage={stage} speaking={speaking} onStopVoice={stopVoice} />
     {!['safety', 'dashboard', 'part', 'summary'].includes(stage) && <SomaOrb mode={inputPhase !== 'idle' ? inputPhase : speaking ? 'speaking' : voicePending || loading ? 'thinking' : 'idle'} level={voiceLevel} onStop={stopVoice} />}
     {loading && <p className="caption" role="status">{voicePending ? 'Preparing SOMA’s voice…' : 'Saving your response…'}</p>}
     {voiceNotice && <p className="caption" role="status">{voiceNotice}</p>}
 
+    {chatOpen && <section className="soma-chat page-section" aria-label="Conversation with SOMA"><p className="eyebrow">SOMA</p><h1>Bring what’s here.</h1>
+      <div className="chat-messages" role="log" aria-label="Conversation">{chat.map((message, index) => <p key={index} className={`chat-bubble chat-bubble--${message.who}`}>{message.text}</p>)}{!chat.length && <p className="body-copy">You can talk about what you’ve noticed. SOMA will ask, not decide for you.</p>}</div>
+      <div className="chat-quick" aria-label="Conversation starters">{['Guide me in a body scan', 'Help me meet this part'].map((prompt) => <button key={prompt} className="chip" disabled={loading || voiceInputActive} onClick={() => { void sendChat(prompt); }}>{prompt}</button>)}</div>
+      <form className="chat-compose" onSubmit={(event) => { event.preventDefault(); void sendChat(); }}><label className="input-label" htmlFor="chat-draft">Tell SOMA what’s here</label><textarea id="chat-draft" className="prompt-field" rows={2} maxLength={12000} value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} /><div className="landing-actions">{voiceAnswerControl}<button className="button button-primary" disabled={loading || voiceInputActive || !chatDraft.trim()}>Send</button></div></form>
+      {apiError && <p className="error-note" role="alert">{apiError}</p>}
+      <button className="button button-secondary" disabled={loading || voiceInputActive} onClick={() => { stopVoice(); setChatOpen(false); }}>Return to guided check-in</button>
+      <p className="caption">Name a part after the regulation and recheck steps. You choose what to save.</p>
+    </section>}
+
+    {!chatOpen && <>
+
     {stage === 'landing' && <section className="landing page-section" aria-labelledby="landing-title">
       <p className="eyebrow">A quiet place to notice</p>
-      <h1 id="landing-title">What’s happening<br /><em>right now?</em></h1>
-      <p className="lead">You don’t need to know exactly what you’re feeling.</p>
+      <h1 id="landing-title">How are you feeling?</h1>
+      <InnerWeather moods={moods} weather={weather} onMoods={setMoods} onWeather={setWeather} disabled={loading || voiceInputActive} />
+      <p className="lead">Want to say more? Voice or words, your choice.</p>
       <label className="input-label" htmlFor="check-in">Start wherever you are</label>
       <textarea id="check-in" className="prompt-field" rows={2} value={whatIsHappening} onChange={(event) => setWhatIsHappening(event.target.value)} placeholder="I’m noticing…" />
-      <div className="landing-actions"><button className="button button-primary" onClick={startCheckin} disabled={loading || voiceInputActive || !whatIsHappening.trim()}>{loading ? 'Preparing your check-in…' : 'Begin check-in'} <span aria-hidden="true">→</span></button>{voiceAnswerControl}</div>
+      <div className="landing-actions"><button className="button button-primary" onClick={startCheckin} disabled={loading || voiceInputActive || !initialStatement}>{loading ? 'Preparing your check-in…' : 'Begin check-in'} <span aria-hidden="true">→</span></button>{voiceAnswerControl}</div>
       <div className="optional-name"><label className="input-label" htmlFor="display-name">Your name <span>(optional)</span></label><input id="display-name" className="line-input" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="How should we greet you?" /></div>
       {apiError && <p className="error-note" role="alert">{apiError}</p>}
     </section>}
@@ -438,11 +476,11 @@ export default function Home() {
     </section>}
 
     {stage !== 'landing' && stage !== 'safety' && stage !== 'summary' && stage !== 'dashboard' && stage !== 'part' && <div className="flow-layout">
-      <aside className="flow-map"><p className="eyebrow">Your body map</p><BodyMap readOnly={!canEditBody} marks={marks} selectedId={selectedMarkId} onPlace={placeMark} onRemove={removeMark} onSelect={setSelectedMarkId} /></aside>
+      <aside className="flow-map"><p className="eyebrow">Body map</p>{stage === 'locate' && <><h1>Where do you feel it?</h1><p className="body-copy">Tap anywhere inside the body. Then shape the sensation.</p></>}<BodyMap readOnly={!canEditBody} marks={marks} selectedId={selectedMarkId} onPlace={placeMark} onRemove={removeMark} onSelect={setSelectedMarkId} />{canEditBody && <MarkQualities mark={selectedMark} disabled={loading || voiceInputActive} onChange={placeMark} />}</aside>
       <section className="flow-panel" aria-live="polite">
         {['locate', 'sensation', 'intensity', 'recheck', 'explore', 'name'].includes(stage) && <div className="spoken-answer">{voiceAnswerControl}{heardAnswer && <p className="caption">Heard: “{heardAnswer}” · {stage === 'locate' ? 'Where would you like to mark that on the body?' : stage === 'sensation' ? 'Which sensations would you like to select?' : stage === 'intensity' || stage === 'recheck' ? 'What number would you choose on the slider?' : 'Check your words below, then continue.'}</p>}</div>}
         {voiceCaption && stage !== 'regulate' && <p className="voice-caption">{voiceCaption}</p>}
-        {stage === 'locate' && <><p className="eyebrow">First, notice</p><h1>Where do you feel it <em>most strongly?</em></h1><p className="body-copy">Tell SOMA in your own words. Where would you like to place the mark? Tap the outline to choose.</p><ActionRow primary={marks.length ? 'Continue' : 'Place a mark'} onPrimary={continueLocate} onStop={stop} disabled={!marks.length || loading || voiceInputActive} /></>}
+        {stage === 'locate' && <><p className="caption">Voice or tap, your choice. You choose where to mark your sensation.</p><ActionRow primary={marks.length ? 'Continue' : 'Place a mark'} onPrimary={continueLocate} onStop={stop} disabled={!marks.length || loading || voiceInputActive} /></>}
         {stage === 'sensation' && <><p className="eyebrow">Stay with the sensation</p><h1>What does it feel like <em>there?</em></h1><p className="body-copy">Choose all that fit. Tap again to deselect.</p><div className="chip-grid" role="group" aria-label="Sensations — choose all that fit">{sensations.map((item) => { const value = item.toLowerCase(); const selected = selectedSensations.includes(value); return <button key={item} type="button" disabled={voiceInputActive || loading} aria-pressed={selected} className={`chip ${selected ? 'chip-active' : ''}`} onClick={() => setSelectedSensations((current) => current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value])}>{item}</button>; })}</div><ActionRow primary="Continue" onPrimary={continueSensation} onStop={stop} disabled={!selectedSensations.length || loading || voiceInputActive} /></>}
         {stage === 'intensity' && <><p className="eyebrow">A first reading</p><h1>How strong is it <em>right now?</em></h1><div className="range-wrap"><input type="range" min="1" max="10" value={intensityBefore} onChange={(event) => setIntensityBefore(Number(event.target.value))} aria-label="Sensation intensity from 1 to 10" /><div className="range-labels"><span>1 · barely there</span><output>{intensityBefore}</output><span>10 · fills the room</span></div></div><ActionRow primary="Make a little room" onPrimary={continueIntensity} onStop={stop} disabled={voiceInputActive || loading} /></>}
         {stage === 'regulate' && <><p className="eyebrow">Make a little room</p><h1>Would you like to stay with this <em>for a moment?</em></h1><p className="body-copy">{regulationGuidance || exercises[exercise]}</p><div className="exercise-tabs">{(Object.keys(exercises) as Array<keyof typeof exercises>).map((item) => <button key={item} disabled={voiceInputActive || loading} className={`tab ${exercise === item ? 'tab-active' : ''}`} onClick={() => { void chooseExercise(item); }}>{item}</button>)}</div><ActionRow primary="I’m ready to recheck" onPrimary={continueRegulation} onStop={stop} disabled={voiceInputActive || loading} /></>}
@@ -457,14 +495,29 @@ export default function Home() {
 
     {stage === 'dashboard' && <Dashboard parts={parts} error={apiError} onOpen={(part) => { setActivePart(part); setStage('part'); }} onBegin={() => { reset(); setStage('landing'); }} />}
     {stage === 'part' && activePart && <PartPage part={activePart} onBack={() => setStage('dashboard')} />}
+    </>}
+    {stage !== 'safety' && <nav className="bottom-nav" aria-label="Main navigation">
+      <button aria-current={!chatOpen && stage === 'landing' ? 'page' : undefined} disabled={loading || voiceInputActive} onClick={() => { if (stage === 'landing') { setChatOpen(false); return; } if (!apiSessionId || ['summary', 'dashboard', 'part'].includes(stage) || window.confirm('Leave this unfinished check-in and start again?')) void stop(); }}><NavigationIcon kind="checkin" />Check in</button>
+      <button aria-current={!chatOpen && ['locate', 'sensation', 'intensity'].includes(stage) ? 'page' : undefined} disabled={loading || voiceInputActive || !['locate', 'sensation', 'intensity'].includes(stage)} onClick={() => { stopVoice(); setChatOpen(false); }} title="Body mapping is available during the body steps"><NavigationIcon kind="body" />Body</button>
+      <button aria-current={chatOpen || !['landing', 'locate', 'sensation', 'intensity', 'summary', 'dashboard', 'part'].includes(stage) ? 'page' : undefined} disabled={loading || voiceInputActive || !apiSessionId || ['summary', 'dashboard', 'part'].includes(stage)} onClick={() => { stopVoice(); setApiError(''); setChatOpen(true); }} title="Start a check-in to talk with SOMA"><NavigationIcon kind="soma" />SOMA</button>
+      <button aria-current={!chatOpen && ['dashboard', 'part', 'summary'].includes(stage) ? 'page' : undefined} disabled={loading || voiceInputActive} onClick={() => { if (!apiSessionId || ['summary', 'dashboard', 'part'].includes(stage) || window.confirm('Leave this unfinished check-in to view your saved parts?')) void openDashboard(); }}><NavigationIcon kind="parts" />Parts</button>
+    </nav>}
   </main>;
 }
 
 function Dashboard({ parts, error, onOpen, onBegin }: { parts: Part[]; error: string; onOpen: (part: Part) => void; onBegin: () => void }) {
   const activations = parts.flatMap((part) => (part.activationsList ?? []).map((activation) => ({ ...activation, name: part.name }))).sort((a, b) => String(b.activated_at ?? b.date).localeCompare(String(a.activated_at ?? a.date)));
-  return <section className="dashboard page-section"><div className="dashboard-heading"><div><p className="eyebrow">Your parts</p><h1>A map of what’s <em>been here.</em></h1></div><button className="button button-primary" onClick={onBegin}>New check-in</button></div>{error && <p className="error-note" role="alert">{error}</p>}<div className="parts-grid">{parts.map((part) => <button className="part-card" key={part.id} onClick={() => onOpen(part)}><span className="part-dot" /><span className="part-name">{part.name}</span><span className="part-description">{part.description}</span><span className="part-meta">{part.activations} activations · {part.lastSeen}</span><span className="part-arrow" aria-hidden="true">↗</span></button>)}</div><div className="history"><p className="eyebrow">Activation history</p>{activations.length === 0 && <p className="body-copy">No saved activations yet.</p>}{activations.map((activation, index) => <div className="history-row" key={activation.id ?? `${activation.name}-${index}`}><span>{activation.activated_at ? new Date(activation.activated_at).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Recently'}</span><span>{activation.name}</span><span>{activation.body_region ?? 'body'} · {activation.source_sensation ?? 'sensation'}</span><span>{activation.intensity_before ?? '—'} → {activation.intensity_after ?? '—'}</span></div>)}<p className="caption">Trends are made from the moments you choose to save.</p></div></section>;
+  return <section className="dashboard page-section"><div className="dashboard-heading"><div><p className="eyebrow">Your parts</p><h1>A map of what’s <em>been here.</em></h1></div><button className="button button-primary" onClick={onBegin}>New check-in</button></div>{error && <p className="error-note" role="alert">{error}</p>}<WeeklyHistory parts={parts} /><p className="eyebrow">Parts</p><div className="parts-grid">{parts.map((part) => <button className="part-card" key={part.id} onClick={() => onOpen(part)}><PartCharacter color={part.color} /><span className="part-name">{part.name}</span><span className="part-description">{part.description}</span><span className="part-meta">{part.activations} activations · {part.lastSeen}</span><span className="part-arrow" aria-hidden="true">↗</span></button>)}</div><div className="history"><p className="eyebrow">Activation history</p>{activations.length === 0 && <p className="body-copy">No saved activations yet.</p>}{activations.map((activation, index) => <div className="history-row" key={activation.id ?? `${activation.name}-${index}`}><span>{activation.activated_at ? new Date(activation.activated_at).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Recently'}</span><span>{activation.name}</span><span>{activation.body_region ?? 'body'} · {activation.source_sensation ?? 'sensation'}</span><span>{activation.intensity_before ?? '—'} → {activation.intensity_after ?? '—'}</span></div>)}<p className="caption">Trends are made from the moments you choose to save.</p></div></section>;
+}
+
+function describeMark(value: string): string {
+  try {
+    const mark = JSON.parse(value) as Mark;
+    if (typeof mark.region !== 'string') return 'Saved body mark';
+    return [mark.region, ...(Array.isArray(mark.textures) ? mark.textures.filter((item) => typeof item === 'string') : []), typeof mark.movement === 'string' ? mark.movement : ''].filter(Boolean).join(' · ');
+  } catch { return 'Saved body mark'; }
 }
 
 function PartPage({ part, onBack }: { part: Part; onBack: () => void }) {
-  return <section className="part-page page-section"><button className="back-link" onClick={onBack}>← Your parts</button><p className="eyebrow">Part · {part.lastSeen}</p><h1>{part.name}</h1><div className="part-character" aria-hidden="true"><span className="part-character-mark" /></div><p className="part-intro">{part.description}</p><div className="divider" /><p className="eyebrow">What you’ve noticed</p>{(part.attributes ?? []).length === 0 && <p className="body-copy">No attributes saved yet.</p>}{(part.attributes ?? []).map((attribute, index) => <div className="attribute" key={`${attribute.key}-${attribute.recorded_at ?? index}`}><span>{attribute.recorded_at ? new Date(attribute.recorded_at).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Recently'}</span><p>{attribute.key}: {attribute.value}</p></div>)}<div className="divider" /><p className="eyebrow">Activations · {part.activations}</p>{(part.activationsList ?? []).map((activation, index) => <div className="attribute" key={activation.id ?? index}><span>{activation.activated_at ? new Date(activation.activated_at).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Recently'}</span><p>{activation.body_region ?? 'body'} · {activation.source_sensation ?? 'sensation'} · {activation.intensity_before ?? '—'} → {activation.intensity_after ?? '—'}</p></div>)}<button className="button button-secondary" onClick={onBack}>Back to dashboard</button></section>;
+  return <section className="part-page page-section"><button className="back-link" onClick={onBack}>← Your parts</button><p className="eyebrow">Part · {part.lastSeen}</p><h1>{part.name}</h1><div className="part-character" aria-hidden="true"><PartCharacter color={part.color} /></div><p className="part-intro">{part.description}</p><div className="divider" /><p className="eyebrow">What you’ve noticed</p>{(part.attributes ?? []).length === 0 && <p className="body-copy">No attributes saved yet.</p>}{(part.attributes ?? []).map((attribute, index) => <div className="attribute" key={`${attribute.key}-${attribute.recorded_at ?? index}`}><span>{attribute.recorded_at ? new Date(attribute.recorded_at).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Recently'}</span><p>{attribute.key.startsWith('body_mark_') ? describeMark(attribute.value) : `${attribute.key.replaceAll('_', ' ')}: ${attribute.value}`}</p></div>)}<div className="divider" /><p className="eyebrow">Activations · {part.activations}</p>{(part.activationsList ?? []).map((activation, index) => <div className="attribute" key={activation.id ?? index}><span>{activation.activated_at ? new Date(activation.activated_at).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Recently'}</span><p>{activation.body_region ?? 'body'} · {activation.source_sensation ?? 'sensation'} · {activation.intensity_before ?? '—'} → {activation.intensity_after ?? '—'}</p></div>)}<button className="button button-secondary" onClick={onBack}>Back to dashboard</button></section>;
 }

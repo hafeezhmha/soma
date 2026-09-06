@@ -199,18 +199,22 @@ def create_app(database: Database | None = None, orchestrator: Orchestrator | No
             db.execute("UPDATE sessions SET stage = ?, safety_flagged = 1 WHERE id = ?", (Stage.SAFETY.value, session_id))
             _record_message(db, session_id, "assistant", result.message)
             return result
-        next_stage = result.suggested_next_stage or old_stage
-        if next_stage == Stage.COMPLETE:
-            # Only /complete may finish a session because it also removes the
-            # raw transcript as part of one atomic transaction.
-            next_stage = old_stage
-            result = result.model_copy(update={"suggested_next_stage": old_stage})
-        if next_stage != old_stage and not can_transition(old_stage, next_stage):
-            next_stage = old_stage
-            result = result.model_copy(update={"suggested_next_stage": old_stage})
+        next_stage = old_stage
+        if payload.advance_stage:
+            next_stage = result.suggested_next_stage or old_stage
+            if next_stage == Stage.COMPLETE:
+                # Only /complete may finish a session because it also removes the
+                # raw transcript as part of one atomic transaction.
+                next_stage = old_stage
+                result = result.model_copy(update={"suggested_next_stage": old_stage})
+            if next_stage != old_stage and not can_transition(old_stage, next_stage):
+                next_stage = old_stage
+                result = result.model_copy(update={"suggested_next_stage": old_stage})
+        else:
+            result = result.model_copy(update={"suggested_next_stage": old_stage, "ui_action": None})
         # A free-form message after a structured UI action should not skip the
         # body-map fields; the dedicated endpoints own those transitions.
-        if old_stage == Stage.CHECK_IN:
+        if payload.advance_stage and old_stage == Stage.CHECK_IN and next_stage != old_stage:
             db.execute("UPDATE sessions SET stage = ?, initial_statement = ? WHERE id = ?", (next_stage.value, payload.text, session_id))
         else:
             db.execute("UPDATE sessions SET stage = ? WHERE id = ?", (next_stage.value, session_id))
