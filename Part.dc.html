@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;1,6..72,300&family=Work+Sans:wght@400;500&display=swap">
+  <style>
+    :root{--bg:#fcfcfb;--surface:#eef1ec;--surface-hover:#e7ebe5;--line:#cdd6cb;--line-quiet:#e4e7e2;--accent:#4a7360;--accent-hover:#446a58;--accent-soft:#b7c6b4;--ink-quiet:#576357;--ink-label:#5a6a5a;--ink-body:#4a5450;--ink:#2b322c;--placeholder:#9aa79a;}
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--bg);font-family:'Work Sans',system-ui,sans-serif;color:var(--ink-body);-webkit-font-smoothing:antialiased;}
+    a{color:var(--accent);} a:hover{color:var(--accent-hover);}
+    .screen{width:390px;height:940px;padding:56px 24px 32px;display:flex;flex-direction:column;overflow:hidden;}
+    .display{font-family:'Newsreader',Georgia,serif;font-weight:300;font-size:36px;line-height:1.05;color:var(--ink);margin:0;}
+    .reflective{font-family:'Newsreader',Georgia,serif;font-weight:300;font-size:17px;line-height:1.6;color:var(--ink-body);}
+    .microlabel{font-family:'Work Sans';font-weight:500;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-label);}
+    .caption{font-size:11px;line-height:1.5;color:var(--ink-quiet);}
+    .portrait{width:150px;height:150px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;background:var(--surface);}
+    .divider{height:1px;background:var(--line-quiet);width:100%;margin:28px 0;}
+  </style>
+</helmet>
+<div class="screen">
+  <div class="microlabel">Part</div>
+
+  <div style="margin-top:20px;display:flex;flex-direction:column;align-items:center;">
+    <div class="portrait">
+      <svg width="118" height="118" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 120 C18 92 38 84 60 84 C82 84 102 92 102 120 Z" fill="#dfe4dd"/>
+        <rect x="52" y="64" width="16" height="24" rx="8" fill="#e8ddd4"/>
+        <circle cx="60" cy="46" r="26" fill="#ece2d8"/>
+        <path d="M33 48 C30 22 50 13 60 13 C71 13 91 22 87 50 C86 35 74 27 60 27 C46 27 35 35 33 48 Z" fill="#cf8fa4"/>
+        <path d="M31 54 C27 42 29 31 34 26 C33 41 33 49 40 56 C36 56 33 56 31 54 Z" fill="#cf8fa4"/>
+        <circle cx="51" cy="46" r="2" fill="#7a6f66"/>
+        <circle cx="69" cy="46" r="2" fill="#7a6f66"/>
+      </svg>
+    </div>
+    <div class="caption" style="margin-top:8px;">character art · placeholder (generated)</div>
+    <h1 class="display" style="margin-top:14px;">the teenager</h1>
+    <p class="reflective" style="margin:6px 0 0;text-align:center;max-width:34ch;">Wild, a little naughty. She shows up as an electric charge in the jaw.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="microlabel">Where she lives</div>
+  <div style="display:flex;align-items:center;gap:16px;margin-top:14px;">
+    <svg width="46" viewBox="0 0 120 235" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="60" cy="22" r="15" stroke="var(--line)" stroke-width="1.5"/>
+      <rect x="41" y="39" width="38" height="75" rx="15" stroke="var(--line)" stroke-width="1.5"/>
+      <rect x="44" y="116" width="32" height="101" rx="13" stroke="var(--line)" stroke-width="1.5"/>
+      <circle cx="60" cy="37" r="17" stroke="var(--accent-soft)" stroke-width="1.5" fill="none"/>
+      <circle cx="60" cy="37" r="4" fill="var(--accent)"/>
+    </svg>
+    <span class="caption" style="font-size:12px;">jaw — electric, restless</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="microlabel">Her days</div>
+  <div style="margin-top:16px;display:flex;flex-direction:column;gap:18px;">
+    <div>
+      <div class="microlabel" style="color:var(--ink-quiet);">Sep 5</div>
+      <p class="reflective" style="margin:4px 0 0;">Feeling saucy — pink hair today.</p>
+    </div>
+    <div>
+      <div class="microlabel" style="color:var(--ink-quiet);">Sep 3</div>
+      <p class="reflective" style="margin:4px 0 0;">Restless. Wanted the last word.</p>
+    </div>
+    <div>
+      <div class="microlabel" style="color:var(--ink-quiet);">Aug 30</div>
+      <p class="reflective" style="margin:4px 0 0;">First noticed — an electric buzz in the jaw.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

@@ -3,3 +3,6 @@ node_modules/
 .env
 dist/
 build/
+
+# Claude Design build output
+clearing-prototype.html

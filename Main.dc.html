@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;1,6..72,300&family=Work+Sans:wght@400;500&display=swap">
+  <style>
+    :root{--bg:#fcfcfb;--surface:#eef1ec;--surface-hover:#e7ebe5;--line:#cdd6cb;--line-quiet:#e4e7e2;--accent:#4a7360;--accent-hover:#446a58;--accent-soft:#b7c6b4;--ink-quiet:#576357;--ink-label:#5a6a5a;--ink-body:#4a5450;--ink:#2b322c;--placeholder:#9aa79a;}
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--bg);font-family:'Work Sans',system-ui,sans-serif;color:var(--ink-body);-webkit-font-smoothing:antialiased;}
+    a{color:var(--accent);} a:hover{color:var(--accent-hover);}
+    .screen{width:390px;height:844px;padding:64px 24px 32px;display:flex;flex-direction:column;overflow:hidden;}
+    .display{font-family:'Newsreader',Georgia,serif;font-weight:300;font-size:40px;line-height:1.05;color:var(--ink);margin:0;max-width:9ch;}
+    .reflective{font-family:'Newsreader',Georgia,serif;font-weight:300;font-size:17px;line-height:1.6;color:var(--ink-body);}
+    .microlabel{font-family:'Work Sans';font-weight:500;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-label);}
+    .caption{font-size:11px;line-height:1.5;color:var(--ink-quiet);}
+    .btn{font-family:'Work Sans';font-weight:400;font-size:13px;border-radius:999px;padding:12px 24px;border:none;cursor:pointer;}
+    .btn-primary{background:var(--accent);color:var(--bg);}
+    .btn-primary:hover{background:var(--accent-hover);}
+    .btn-secondary{background:transparent;border:1px solid var(--line);color:var(--ink-body);padding:11px 23px;}
+    .tap{cursor:pointer;}
+  </style>
+</helmet>
+<div class="screen">
+  <div class="microlabel">Body map</div>
+  <h1 class="display" style="margin-top:22px;">Where do you feel it?</h1>
+  <p class="reflective" style="margin:14px 0 0;max-width:38ch;">Tap where the sensation lives.</p>
+
+  <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;width:100%;">
+    <svg width="212" viewBox="0 0 240 470" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="120" cy="44" r="30" stroke="var(--line)" stroke-width="1.5"/>
+      <rect x="82" y="78" width="76" height="150" rx="30" stroke="var(--line)" stroke-width="1.5"/>
+      <rect x="88" y="230" width="64" height="202" rx="26" stroke="var(--line)" stroke-width="1.5"/>
+
+      <circle cx="120" cy="74"  r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+      <circle cx="120" cy="130" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+      <circle cx="120" cy="198" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+      <circle cx="120" cy="300" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+      <circle cx="120" cy="372" r="4" stroke="var(--accent-soft)" stroke-width="1.5"/>
+
+      <circle class="tap" cx="120" cy="74"  r="26" fill="var(--accent)" opacity="0" onClick="{{pickJaw}}"/>
+      <circle class="tap" cx="120" cy="130" r="26" fill="var(--accent)" opacity="0" onClick="{{pickChest}}"/>
+      <circle class="tap" cx="120" cy="198" r="26" fill="var(--accent)" opacity="0" onClick="{{pickGut}}"/>
+      <circle class="tap" cx="120" cy="300" r="26" fill="var(--accent)" opacity="0" onClick="{{pickHips}}"/>
+      <circle class="tap" cx="120" cy="372" r="26" fill="var(--accent)" opacity="0" onClick="{{pickThighs}}"/>
+
+      <circle cx="{{pcx}}" cy="{{pcy}}" r="34" stroke="var(--accent-soft)" stroke-width="1.5" fill="none" opacity="{{markOpacity}}"/>
+      <circle cx="{{pcx}}" cy="{{pcy}}" r="6" fill="var(--accent)" opacity="{{markOpacity}}"/>
+    </svg>
+  </div>
+
+  <div style="height:44px;display:flex;align-items:center;gap:8px;opacity:{{markOpacity}};">
+    <span style="width:10px;height:10px;border-radius:999px;background:var(--accent);display:inline-block;"></span>
+    <span style="font-size:12px;color:var(--ink-body);">a sensation — {{plabel}}</span>
+  </div>
+
+  <div style="display:flex;gap:10px;">
+    <button class="btn btn-primary" style="flex-grow:1;">Name this part</button>
+    <button class="btn btn-secondary">Not now</button>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  constructor(props){ super(props); this.state = { picked: null, pcx: 120, pcy: 235, plabel: '' }; }
+  sel(id, cx, cy, label){ this.setState({ picked: id, pcx: cx, pcy: cy, plabel: label }); }
+  renderVals() {
+    const p = this.state.picked;
+    return {
+      pickJaw:    () => this.sel('jaw', 120, 74, 'jaw'),
+      pickChest:  () => this.sel('chest', 120, 130, 'chest'),
+      pickGut:    () => this.sel('gut', 120, 198, 'belly'),
+      pickHips:   () => this.sel('hips', 120, 300, 'hips'),
+      pickThighs: () => this.sel('thighs', 120, 372, 'thighs'),
+      pcx: this.state.pcx,
+      pcy: this.state.pcy,
+      markOpacity: p ? 1 : 0,
+      plabel: this.state.plabel || '',
+    };
+  }
+}
+</script>
+</body>
+</html>

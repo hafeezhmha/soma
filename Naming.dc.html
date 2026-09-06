@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;1,6..72,300&family=Work+Sans:wght@400;500&display=swap">
+  <style>
+    :root{--bg:#fcfcfb;--surface:#eef1ec;--surface-hover:#e7ebe5;--line:#cdd6cb;--line-quiet:#e4e7e2;--accent:#4a7360;--accent-hover:#446a58;--accent-soft:#b7c6b4;--ink-quiet:#576357;--ink-label:#5a6a5a;--ink-body:#4a5450;--ink:#2b322c;--placeholder:#9aa79a;}
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--bg);font-family:'Work Sans',system-ui,sans-serif;color:var(--ink-body);-webkit-font-smoothing:antialiased;}
+    a{color:var(--accent);} a:hover{color:var(--accent-hover);}
+    .screen{width:390px;height:844px;padding:64px 24px 32px;display:flex;flex-direction:column;overflow:hidden;}
+    .reflective{font-family:'Newsreader',Georgia,serif;font-weight:300;font-size:17px;line-height:1.6;color:var(--ink-body);}
+    .microlabel{font-family:'Work Sans';font-weight:500;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-label);}
+    .caption{font-size:11px;line-height:1.5;color:var(--ink-quiet);}
+    .btn{font-family:'Work Sans';font-weight:400;font-size:13px;border-radius:999px;padding:12px 24px;border:none;cursor:pointer;}
+    .btn-primary{background:var(--accent);color:var(--bg);}
+    .btn-primary:hover{background:var(--accent-hover);}
+    .btn-secondary{background:transparent;border:1px solid var(--line);color:var(--ink-body);padding:11px 23px;}
+    .field{width:100%;border:none;border-bottom:1px solid var(--line);background:transparent;font-family:'Newsreader',Georgia,serif;font-weight:300;font-size:18px;color:var(--ink);padding:14px 0;outline:none;margin-top:6px;}
+    .field::placeholder{color:var(--placeholder);}
+    .field:focus{border-bottom-color:var(--ink-body);}
+    .chip{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border-radius:999px;padding:8px 14px;font-size:12px;color:var(--ink-body);}
+    .chip-dot{width:7px;height:7px;border-radius:999px;background:var(--accent);flex:none;}
+  </style>
+</helmet>
+<div class="screen">
+  <div class="microlabel">Soma</div>
+
+  <div style="margin-top:28px;display:flex;gap:12px;align-items:flex-start;">
+    <span style="margin-top:8px;width:8px;height:8px;border-radius:999px;background:var(--accent-soft);flex:none;"></span>
+    <p class="reflective" style="margin:0;max-width:38ch;">There's something electric in your jaw — restless, like it wants to move. A part of you might live here. Would you like to give it a name?</p>
+  </div>
+
+  <div style="margin-top:44px;">
+    <div class="microlabel">This part is called</div>
+    <input class="field" placeholder="Give this part a name…" value="{{name}}" onInput="{{onName}}"/>
+  </div>
+
+  <div style="margin-top:36px;">
+    <div class="microlabel" style="margin-bottom:14px;">How it feels so far</div>
+    <span class="chip"><span class="chip-dot"></span>{{displayName}}</span>
+  </div>
+
+  <div style="flex-grow:1;"></div>
+  <p class="caption" style="margin-bottom:16px;">Soma only writes down what you tell it. You can rename or release this part any time.</p>
+  <div style="display:flex;gap:10px;">
+    <button class="btn btn-primary" style="flex-grow:1;">Save this part</button>
+    <button class="btn btn-secondary">Not now</button>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  constructor(props){ super(props); this.state = { name: 'the teenager' }; }
+  renderVals() {
+    const name = this.state.name;
+    return {
+      name: name,
+      onName: (e) => this.setState({ name: e.target.value }),
+      displayName: (name && name.trim()) ? name : 'unnamed part',
+    };
+  }
+}
+</script>
+</body>
+</html>
