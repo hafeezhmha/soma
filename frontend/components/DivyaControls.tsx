@@ -1,6 +1,22 @@
 'use client';
 
+import { useEffect } from 'react';
+import type { CSSProperties } from 'react';
 import type { Mark } from '@/lib/types';
+
+let modelViewerRequested = false;
+function useModelViewer() {
+  useEffect(() => {
+    if (modelViewerRequested || typeof document === 'undefined') return;
+    modelViewerRequested = true;
+    if (customElements.get('model-viewer') || document.querySelector('script[data-model-viewer]')) return;
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = 'https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js';
+    script.setAttribute('data-model-viewer', '');
+    document.head.appendChild(script);
+  }, []);
+}
 
 export const moodOptions = ['scattered', 'wired', 'heavy', 'foggy', 'tender', 'raw', 'quiet', 'okay'];
 const colors = [ ['Ochre', '#c2a35a'], ['Clay', '#c58a6b'], ['Blue', '#7d9bb0'], ['Slate', '#6b6f76'], ['Green', '#4a7360'], ['Rose', '#b98a9e'] ];
@@ -23,8 +39,27 @@ export function MarkQualities({ mark, onChange, disabled }: { mark?: Mark; onCha
   </fieldset>;
 }
 
-export function PartCharacter({ color }: { color: string }) {
-  return <svg className="part-character-art" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 48 C7 37 15 33 24 33 C33 33 41 37 41 48 Z" fill={color} opacity=".3" /><circle cx="24" cy="18" r="10" fill={color} opacity=".42" /></svg>;
+export function PartCharacter({ color, model, size = 92, interactive = false }: { color: string; model?: string; size?: number; interactive?: boolean }) {
+  useModelViewer();
+  const well: CSSProperties = { width: size, height: size, borderRadius: 999, background: `${color}1f`, display: 'grid', placeItems: 'center', overflow: 'hidden', flex: 'none' };
+  if (!model) {
+    return <div style={well}><svg className="part-character-art" viewBox="0 0 48 48" width={size * 0.62} height={size * 0.62} aria-hidden="true"><path d="M7 48 C7 37 15 33 24 33 C33 33 41 37 41 48 Z" fill={color} opacity=".3" /><circle cx="24" cy="18" r="10" fill={color} opacity=".42" /></svg></div>;
+  }
+  return <div style={well}>
+    <model-viewer
+      src={model}
+      auto-rotate
+      rotation-per-second="18deg"
+      camera-controls={interactive ? true : undefined}
+      disable-zoom
+      interaction-prompt="none"
+      exposure="1"
+      shadow-intensity="0.4"
+      environment-image="neutral"
+      loading="eager"
+      style={{ width: '100%', height: '100%', backgroundColor: 'transparent', pointerEvents: interactive ? 'auto' : 'none', ['--poster-color' as string]: 'transparent' }}
+    />
+  </div>;
 }
 
 export function NavigationIcon({ kind }: { kind: 'checkin' | 'body' | 'soma' | 'parts' }) {

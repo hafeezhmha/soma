@@ -1,14 +1,15 @@
 import { Activation, Part, Session } from './types';
+import { modelForPart } from './partModels';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 const tokenKey = 'soma.profile-token';
 let pendingProfile: Promise<string> | undefined;
 
-const demoParts: Part[] = [
+const demoParts: Part[] = ([
   {
     id: 'new-part',
     name: 'The presenter',
-    color: '#4a7360',
+    color: '#c2a35a',
     description: 'A part that wants to be ready before the moment arrives.',
     activations: 1,
     lastSeen: 'Today',
@@ -16,12 +17,12 @@ const demoParts: Part[] = [
   {
     id: 'careful-one',
     name: 'The careful one',
-    color: '#4a7360',
+    color: '#7d9bb0',
     description: 'Keeps a close eye on what could go wrong.',
     activations: 3,
     lastSeen: 'September 4',
   },
-];
+] as Part[]).map((part) => ({ ...part, model: modelForPart(part) }));
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!apiUrl) throw new Error('API unavailable in demo mode');
@@ -168,6 +169,7 @@ export async function fetchParts(): Promise<Part[]> {
       id: part.id,
       name: part.name,
       color: latestColor(part.attributes),
+      model: modelForPart({ id: part.id, name: part.name }),
       description: 'A part you have taken time to notice.',
       activations: response.activations.filter((activation) => activation.part_id === part.id).length,
       lastSeen: response.activations.find((activation) => activation.part_id === part.id)?.activated_at ? new Date(response.activations.find((activation) => activation.part_id === part.id)!.activated_at!).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Not yet seen',
@@ -184,7 +186,7 @@ export async function fetchPart(id: string): Promise<Part | undefined> {
   try {
     const token = await profileToken();
     const response = await request<{ id: string; name: string; attributes: Array<{ key: string; value: string; recorded_at?: string }>; activations: Activation[] }>(`/parts/${encodeURIComponent(id)}`, withToken(token));
-    return { id: response.id, name: response.name, color: latestColor(response.attributes), description: 'A part you have taken time to notice.', activations: response.activations.length, lastSeen: response.activations[response.activations.length - 1]?.activated_at ? new Date(response.activations[response.activations.length - 1].activated_at!).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Not yet seen', attributes: response.attributes, activationsList: response.activations };
+    return { id: response.id, name: response.name, color: latestColor(response.attributes), model: modelForPart({ id: response.id, name: response.name }), description: 'A part you have taken time to notice.', activations: response.activations.length, lastSeen: response.activations[response.activations.length - 1]?.activated_at ? new Date(response.activations[response.activations.length - 1].activated_at!).toLocaleDateString('en', { month: 'long', day: 'numeric' }) : 'Not yet seen', attributes: response.attributes, activationsList: response.activations };
   } catch {
     if (apiUrl) throw new Error('This part could not be loaded. Check the connection and try again.');
     return demoParts.find((part) => part.id === id) ?? demoParts[0];

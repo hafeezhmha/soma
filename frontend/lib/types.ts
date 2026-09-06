@@ -44,6 +44,7 @@ export type Part = {
   id: string;
   name: string;
   color: string;
+  model?: string;
   description: string;
   activations: number;
   lastSeen: string;
