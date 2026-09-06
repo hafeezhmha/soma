@@ -46,6 +46,10 @@ Last updated: 2026-09-06
 
 ## Validation log
 
+- Fixed scrolling/sizing: sticky SOMA header, viewport-height-aware fixed orb, wrapping mobile header actions, and non-sticky body maps on stacked/short layouts to prevent overlap and inaccessible controls.
+
+- Moved the SOMA orb to the right edge, vertically centered in the viewport; reserved content space and reduced its size on mobile.
+
 - Voice input is available for body location, sensations, intensity/recheck, concern, and part name. Per user direction, removed keyword matching and automatic selections: spoken structured answers are shown verbatim and the user is asked to choose on the map/chips/slider. Recording interrupts narration and stage navigation cancels transcription.
 - Added the dark-green dimensional SOMA aura orb using the frontend-design direction: microphone and playback audio drive its level, with distinct listening/thinking/speaking states, pointer tilt, stop-speaking interaction, and reduced-motion support.
 - Current checks: nine frontend tests remain after removing keyword-parser tests; TypeScript and lint pass, local page returns HTTP 200. Real microphone/playback and visual verification still require a browser/manual check.

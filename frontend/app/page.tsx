@@ -411,7 +411,7 @@ export default function Home() {
     } catch (error) { if (operation === operationRef.current) setApiError(error instanceof Error ? error.message : 'Your reflection could not be saved. Try again.'); } finally { if (operation === operationRef.current) setLoading(false); }
   };
 
-  return <main className="app-shell app-shell--companion">
+  return <main className={`app-shell ${!['safety', 'dashboard', 'part', 'summary'].includes(stage) ? 'app-shell--companion' : ''}`}>
     <Header onDashboard={() => { void openDashboard(); }} onHome={() => { void stop(); }} stage={stage} speaking={speaking} onStopVoice={stopVoice} />
     {!['safety', 'dashboard', 'part', 'summary'].includes(stage) && <SomaOrb mode={inputPhase !== 'idle' ? inputPhase : speaking ? 'speaking' : voicePending || loading ? 'thinking' : 'idle'} level={voiceLevel} onStop={stopVoice} />}
     {loading && <p className="caption" role="status">{voicePending ? 'Preparing SOMA’s voice…' : 'Saving your response…'}</p>}

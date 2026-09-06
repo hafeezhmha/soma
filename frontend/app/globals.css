@@ -23,7 +23,7 @@ button:disabled { cursor: not-allowed; }
 button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
 
 .app-shell { min-height: 100vh; padding: 0 44px 64px; }
-.site-header { height: 92px; border-bottom: 1px solid var(--line-quiet); display: flex; align-items: center; justify-content: space-between; }
+.site-header { position: sticky; top: 0; z-index: 30; min-height: 92px; background: var(--bg); border-bottom: 1px solid var(--line-quiet); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .header-actions { display: flex; align-items: center; gap: 24px; }
 .wordmark { border: 0; padding: 0; background: none; color: var(--ink); font-family: "Newsreader", Georgia, serif; font-size: 22px; line-height: 1; font-weight: 300; letter-spacing: -.02em; }
 .text-link, .back-link { border: 0; padding: 8px 0; background: transparent; color: var(--ink-body); font-size: 13px; }
@@ -37,8 +37,12 @@ h1 em { font-style: italic; }
 .caption, .map-hint { color: var(--ink-quiet); font-size: 11px; line-height: 1.5; }
 
 .landing { min-height: calc(100vh - 156px); padding: 105px 0 64px; }
-.app-shell--companion > .landing { padding-top: 24px; min-height: auto; }
-.app-shell > .soma-orb { display: flex; margin: 24px auto 0; }
+.app-shell--companion { padding-right: 220px; }
+.app-shell > .soma-orb { position: fixed; right: max(20px, env(safe-area-inset-right)); top: 50vh; top: 50dvh; transform: translateY(-50%); display: flex; margin: 0; z-index: 20; }
+.app-shell > .soma-orb .soma-orb__control { width: clamp(64px, 22dvh, 160px); }
+.flow-map, .flow-panel, .page-section { min-width: 0; }
+.flow-panel, .page-section { overflow-wrap: anywhere; }
+.app-shell--companion > .flow-layout { grid-template-columns: minmax(240px, 1fr) minmax(280px, 1fr); gap: 48px; }
 .spoken-answer { margin-bottom: 24px; }
 .landing h1 { max-width: 11ch; }
 .landing-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 32px; }
@@ -67,7 +71,7 @@ h1 em { font-style: italic; }
 .prompt-field:focus, .line-input:focus { border-color: var(--ink-body); outline: none; }
 
 .flow-layout { max-width: 1120px; min-height: calc(100vh - 156px); margin: 0 auto; padding: 64px 0; display: grid; grid-template-columns: minmax(330px, 1fr) minmax(380px, 1fr); gap: clamp(56px, 10vw, 150px); align-items: start; }
-.flow-map { position: sticky; top: 32px; min-height: 560px; padding-right: 40px; border-right: 1px solid var(--line-quiet); }
+.flow-map { position: sticky; top: 116px; min-height: 560px; padding-right: 40px; border-right: 1px solid var(--line-quiet); }
 .flow-panel { padding-top: 76px; }
 .voice-caption { margin: 0 0 28px; padding-left: 16px; border-left: 2px solid var(--accent-soft); color: var(--ink-body); font-size: 15px; line-height: 1.6; }
 .flow-panel h1 { max-width: 13ch; }
@@ -142,9 +146,25 @@ input[type="range"] { width: 100%; height: 24px; accent-color: var(--accent); cu
 .attribute p { margin: 0; color: var(--ink-body); font-family: "Newsreader", Georgia, serif; font-size: 17px; line-height: 1.5; font-weight: 300; }
 .part-page .button { margin-top: 32px; }
 
+@media (min-width: 761px) and (max-width: 1050px) {
+  .app-shell--companion > .flow-layout { grid-template-columns: 1fr; gap: 32px; }
+  .app-shell--companion .flow-map { position: static; min-height: 0; padding-right: 0; border-right: 0; }
+  .app-shell--companion .flow-panel { padding-top: 0; }
+}
+
+@media (max-height: 800px) {
+  .flow-map { position: static; }
+}
+
 @media (max-width: 760px) {
   .app-shell { padding: 0 24px 48px; }
-  .site-header { height: 76px; }
+  .app-shell--companion { padding-right: 88px; }
+  .app-shell > .soma-orb { right: max(4px, env(safe-area-inset-right)); width: 76px; }
+  .app-shell > .soma-orb .soma-orb__control { width: 64px; }
+  .app-shell > .soma-orb .soma-orb__status { font-size: 9px; letter-spacing: 0; }
+  .site-header { min-height: 76px; padding: 12px 0; }
+  .app-shell--companion > .site-header { margin-right: -64px; }
+  .header-actions { gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
   .landing { min-height: auto; padding: 80px 0 48px; }
   .optional-name { margin-top: 64px; }
   .flow-layout { min-height: auto; padding: 48px 0; display: flex; flex-direction: column; gap: 32px; }
@@ -153,6 +173,7 @@ input[type="range"] { width: 100%; height: 24px; accent-color: var(--accent); cu
   .flow-map .body-map { height: 330px; }
   .flow-map .map-wrap { max-width: 220px; margin: 0 auto; }
   .flow-panel { width: 100%; padding-top: 16px; }
+  .flow-panel h1, .landing h1 { font-size: clamp(28px, 6vw, 40px); }
   .summary { padding-top: 76px; }
   .summary-card { grid-template-columns: 1fr; gap: 20px; padding: 24px; }
   .summary-mark .map-wrap { margin: 0; }
