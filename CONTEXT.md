@@ -19,8 +19,10 @@ IFS parts*. Noticing a physical sensation is how a user locates a part.
   with its own visual identity, name, and evolving attributes. It is *anchored to a
   body location* discovered via the Body Map. Two representations by surface: on the
   Body Map it is a **mark** (dot + ring for location/spread); on the Dashboard/part
-  page it appears as its **character**. The character is user-directed, never a
-  generic stock avatar; it never appears on the body map or check-in.
+  page it appears as its **character** — a generated visual representation of the
+  Part (full ambition; may be downgraded to text+colour under time pressure). The
+  character is user-directed, never a generic stock avatar; it never appears on the
+  body map or check-in.
 - **Check-in** — the entry ritual: a short "how are you feeling?" prompt that opens
   a session before body mapping.
 - **Soma** — the central conversational AI agent (the app itself is **Clearing**).
@@ -31,6 +33,15 @@ IFS parts*. Noticing a physical sensation is how a user locates a part.
 - **Part attributes** — evolving, user-supplied descriptors on a Part (mood/state,
   appearance, the Sensation that surfaced it), each stamped with a date. Attributes
   change over time; history is retained (e.g. "Sept 5: teenage part feeling saucy").
-- **Dashboard** — review surface. Lets the user open an individual Part and see its
-  current state + historical timeline, plus trends across Parts over time.
+- **Activation** — an instance of a Part showing up in a session. The atomic unit
+  of history.
+- **Session event** — the one record shape that powers all review: per session,
+  `{ date, part_id, body_location, attributes[], source_sensation }`. Every Trend
+  view is derived from these events; there is no separate per-view storage.
+- **Trend** — a derived view over Session events. The **hero** trend is *Part
+  activation over time* (which Parts, how often, lately). Other views (a Part's
+  mood over dates, body geography, check-in feeling over days) derive from the same
+  events and are rendered as time allows.
+- **Dashboard** — review surface. Lets the user open an individual Part (character +
+  attribute timeline) and see Trends across Parts, all derived from Session events.
 
