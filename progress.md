@@ -69,6 +69,14 @@ Validation: all 46 Python tests and 14 frontend tests pass; TypeScript, ESLint, 
 - VectorAI adapter now stores curated RAG content only and supports stage/risk/framework filters.
 - Nine version-controlled demo knowledge documents are embedded and ingested.
 - The frontend is ready for Vercel and the persistent backend stack is defined for a Linux VM.
+- Added `frontend/vercel.json` with explicit Next.js detection and baseline
+  security headers. Vercel deployment uses `frontend` as the Root Directory and
+  `NEXT_PUBLIC_API_URL` to reach the persistent FastAPI service; SQLite and
+  VectorAI remain outside Vercel by design.
+- Added `scripts/public-demo-tunnel.sh` to verify the local API and start ngrok
+  or Cloudflare Tunnel for temporary Vercel demos without exposing VectorAI.
+- Added `FRONTEND_DEPLOYMENT_HANDOFF.md` with Claude-ready Vercel, local API,
+  tunnel, CORS, and public smoke-test instructions.
 - Automated Chrome verification is pending because Google Chrome is not installed on this machine; the rendered frontend HTML and live API were smoke-tested locally.
 
 ## Validation log

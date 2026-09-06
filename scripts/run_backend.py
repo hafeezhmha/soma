@@ -27,4 +27,5 @@ if __name__ == "__main__":
     load_env()
     os.chdir(ROOT)
     sys.path.insert(0, str(ROOT))
-    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=True)
+    reload = os.getenv("SOMA_RELOAD", "true").lower() in {"1", "true", "yes"}
+    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=reload)

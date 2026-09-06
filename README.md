@@ -103,11 +103,55 @@ The in-process limits are defense in depth and reset when the API restarts.
 
 ### Frontend — Vercel
 
-Import the repository into Vercel, set the root directory to `frontend`, and add:
+Import the repository into Vercel and set the project **Root Directory** to
+`frontend`. Vercel will detect the included `frontend/vercel.json` and Next.js
+build configuration automatically. Add this environment variable for Preview
+and Production:
 
 ```text
 NEXT_PUBLIC_API_URL=https://api.your-domain.example
 ```
+
+The value must be the public HTTPS origin of the FastAPI service, without a
+trailing slash. After the first deployment, add its exact Vercel URL to the
+backend `CORS_ORIGINS` value and redeploy the backend.
+
+If `NEXT_PUBLIC_API_URL` is omitted, SOMA intentionally runs in its local demo
+mode; voice, persistence, and the Parts dashboard require the configured API.
+
+### Public demo with a local backend
+
+For a temporary demo, the backend can remain on your laptop while Vercel hosts
+the frontend. A browser cannot call your laptop's `localhost` directly, so
+expose only port 8000 through an HTTPS tunnel. Keep the tunnel and backend
+running while people use the link:
+
+```bash
+# From the repository root. Use this if the API is not already running:
+docker compose up -d --build
+
+# Or, for the local Python API (disable the file watcher for a public tunnel):
+# SOMA_RELOAD=false .venv/bin/python scripts/run_backend.py
+
+# In a second terminal, start the tunnel:
+bash scripts/public-demo-tunnel.sh
+```
+
+Run only one backend option at a time; both listen on port 8000.
+
+The tunnel prints an HTTPS URL. Set that URL as Vercel's
+`NEXT_PUBLIC_API_URL`, then redeploy. Add the exact Vercel deployment URL to
+the root `.env` `CORS_ORIGINS` value and restart the local API. With ngrok,
+authenticate once first:
+
+```bash
+ngrok config add-authtoken YOUR_NGROK_TOKEN
+```
+
+This is suitable for testing only. The public endpoint can consume your
+Anthropic and ElevenLabs credits, the tunnel may change between runs, and your
+computer must stay awake. VectorAI remains bound to localhost and is never
+exposed by the helper.
 
 ### Backend and VectorAI — persistent Linux VM
 
