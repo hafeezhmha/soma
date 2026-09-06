@@ -7,7 +7,10 @@ import { isBodyStage, markFromPoint, requiresLeaveConfirmation, stageAfter } fro
 import BodyMap from '@/components/BodyMap';
 import dynamic from 'next/dynamic';
 import { pointForRegion } from '@/components/body-map-geometry';
-import type { StudioResult } from '@/components/BodyStudio';
+import type { StudioRegions, StudioResult } from '@/components/BodyStudio';
+
+/** id prefix marking the marks the 3D studio owns and rebuilds from the drawing */
+const STUDIO_MARK = 'mark-studio-';
 
 // three.js is a large dependency and only needed once the studio is opened.
 const BodyStudio = dynamic(() => import('@/components/BodyStudio'), { ssr: false });
@@ -410,21 +413,39 @@ export default function Home() {
   const placeMark = (mark: Mark) => { if (!canEditBody) return; if (marks.length >= 10 && !marks.some((item) => item.id === mark.id)) { setApiError('You can keep up to ten marks in a check-in. Select a mark to edit it.'); return; } setMarks((current) => current.some((item) => item.id === mark.id) ? current.map((item) => item.id === mark.id ? mark : item) : [...current, mark]); setSelectedMarkId(mark.id); };
   const [studioOpen, setStudioOpen] = useState(false);
   const closeStudio = () => setStudioOpen(false);
-  const finishStudio = (result: StudioResult | null) => {
-    setStudioOpen(false);
-    if (!result) return;
-    const point = pointForRegion(result.region);
-    // Reuse the mark already on this region rather than stacking a second one.
-    const existing = marks.find((mark) => mark.region === result.region);
-    placeMark({
-      id: existing?.id ?? `mark-${crypto.randomUUID()}`,
-      x: point.x,
-      y: point.y,
-      spread: existing?.spread ?? 14,
-      region: result.region,
-      color: result.color,
+
+  /**
+   * Mirror the 3D drawing onto the 2D body map as it happens: one mark per
+   * region drawn on, its spread growing with how much was drawn there. Marks
+   * are keyed by region so redrawing updates in place instead of stacking up.
+   */
+  const syncStudioRegions = useCallback((regions: StudioRegions) => {
+    setMarks((current) => {
+      // Studio marks are owned by the drawing: they're rebuilt from it every
+      // time, so erasing a region removes its mark. Marks made another way (the
+      // area picker) carry a different id prefix and are left alone.
+      const manual = current.filter((mark) => !mark.id.startsWith(STUDIO_MARK));
+      const drawn = Object.entries(regions).map(([region, { weight, color }]) => {
+        const point = pointForRegion(region);
+        const previous = current.find((mark) => mark.id.startsWith(STUDIO_MARK) && mark.region === region);
+        return {
+          id: previous?.id ?? `${STUDIO_MARK}${crypto.randomUUID()}`,
+          x: point.x,
+          y: point.y,
+          // Spread grows with how much was drawn there, so the 2D map echoes
+          // the size of the area rather than always showing the same dot.
+          spread: Math.round(Math.min(26, 8 + weight * 0.7)),
+          region,
+          color,
+          textures: previous?.textures,
+          movement: previous?.movement,
+        };
+      });
+      return [...manual.filter((mark) => !drawn.some((d) => d.region === mark.region)), ...drawn].slice(0, 10);
     });
-  };
+  }, []);
+
+  const finishStudio = (_result: StudioResult | null) => setStudioOpen(false);
 
   const removeMark = (id: string) => { if (!canEditBody) return; setMarks((current) => current.filter((mark) => mark.id !== id)); setSelectedMarkId(undefined); };
   const answerByVoice = (text: string) => {
@@ -524,7 +545,7 @@ export default function Home() {
     {stage === 'dashboard' && <Dashboard parts={parts} error={apiError} onOpen={(part) => { setActivePart(part); setStage('part'); }} onBegin={() => { reset(); setStage('landing'); }} />}
     {stage === 'part' && activePart && <PartPage part={activePart} onBack={() => setStage('dashboard')} />}
     </>}
-    {studioOpen && <BodyStudio color={selectedMark?.color} focusRegion={selectedMark?.region} onClose={closeStudio} onDone={finishStudio} />}
+    {studioOpen && <BodyStudio color={selectedMark?.color} focusRegion={selectedMark?.region} onClose={closeStudio} onDone={finishStudio} onRegionsChange={syncStudioRegions} />}
     {stage !== 'safety' && <nav className="bottom-nav" aria-label="Main navigation">
       <button aria-current={!chatOpen && stage === 'landing' ? 'page' : undefined} disabled={loading || voiceInputActive} onClick={() => navigateAway('home')}><NavigationIcon kind="checkin" />Check in</button>
       <button aria-current={!chatOpen && isBodyStage(stage) ? 'page' : undefined} disabled={loading || voiceInputActive || !isBodyStage(stage)} onClick={() => { stopVoice(); setChatOpen(false); }} title="Body mapping is available during the body steps"><NavigationIcon kind="body" />Body</button>

@@ -157,10 +157,12 @@ export default function BodyMap({ marks, selectedId, onPlace, onRemove, onSelect
 
       {marks.length > 0 && <div className="soma-map__selection">
         <div className="soma-map__marks" aria-label="Marked sensations">
+          {/* The body speaks for itself — the region is kept for screen readers
+              and for the saved session, but not spelled out on screen. */}
           {marks.map((mark, index) => readOnly ? (
-            <span key={mark.id} className="soma-map__mark-label"><span className="soma-map__swatch" />{mark.region}</span>
+            <span key={mark.id} className="soma-map__mark-label soma-map__mark-label--dot"><span className="soma-map__swatch" style={{ background: mark.color || 'var(--accent)' }} /><span className="soma-map__sr-only">{mark.region}</span></span>
           ) : (
-            <button key={mark.id} type="button" className={`soma-map__mark-label${selected?.id === mark.id ? ' soma-map__mark-label--selected' : ''}`} aria-label={`Select ${mark.region} sensation, mark ${index + 1}`} aria-pressed={selected?.id === mark.id} onClick={() => onSelect(mark.id)}><span className="soma-map__swatch" />{mark.region}</button>
+            <button key={mark.id} type="button" className={`soma-map__mark-label soma-map__mark-label--dot${selected?.id === mark.id ? ' soma-map__mark-label--selected' : ''}`} aria-label={`Select sensation ${index + 1}`} aria-pressed={selected?.id === mark.id} onClick={() => onSelect(mark.id)}><span className="soma-map__swatch" style={{ background: mark.color || 'var(--accent)' }} /><span className="soma-map__sr-only">{mark.region}</span></button>
           ))}
         </div>
         {selected && !readOnly && <>

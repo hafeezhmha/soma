@@ -9,6 +9,8 @@ import { PaintSystem } from '@/lib/paint/painter';
 import './body-studio.css';
 
 export type StudioResult = { region: string; color: string };
+/** How much has been drawn on each region so far, and in what colour. */
+export type StudioRegions = Record<string, { weight: number; color: string }>;
 
 type BodyStudioProps = {
   /** Colour the sensation is being drawn in. */
@@ -17,6 +19,8 @@ type BodyStudioProps = {
   focusRegion?: string;
   onClose: () => void;
   onDone: (result: StudioResult | null) => void;
+  /** Fires as the drawing changes, so the 2D body map keeps up with it live. */
+  onRegionsChange?: (regions: StudioRegions) => void;
 };
 
 const FIGURES = [
@@ -33,14 +37,7 @@ const SENSATION_COLORS = [
   { hex: '#a34f6d', name: 'Tight' },
 ];
 
-/** Human-facing names for the regions carried on the model's nodes. */
-const REGION_LABEL: Record<string, string> = {
-  head: 'Head', throat: 'Throat', shoulders: 'Shoulders', chest: 'Chest',
-  stomach: 'Stomach', hips: 'Hips', arms: 'Arms', hands: 'Hands',
-  legs: 'Legs', feet: 'Feet',
-};
-
-export default function BodyStudio({ color = '#c4623f', focusRegion, onClose, onDone }: BodyStudioProps) {
+export default function BodyStudio({ color = '#c4623f', focusRegion, onClose, onDone, onRegionsChange }: BodyStudioProps) {
   const holderRef = useRef<HTMLDivElement>(null);
   const engine = useRef<any>(null);
   const [figure, setFigure] = useState<(typeof FIGURES)[number]['id']>('feminine');
@@ -48,8 +45,7 @@ export default function BodyStudio({ color = '#c4623f', focusRegion, onClose, on
   const [size, setSize] = useState(9);
   const [erase, setErase] = useState(false);
   const [ready, setReady] = useState(false);
-  const [touched, setTouched] = useState<Record<string, number>>({});
-  const [hovered, setHovered] = useState<string>('');
+  const [touched, setTouched] = useState<StudioRegions>({});
 
   // Latest control values, read inside the pointer handlers without re-binding them.
   const settings = useRef({ brushColor, size, erase });
@@ -176,7 +172,17 @@ export default function BodyStudio({ color = '#c4623f', focusRegion, onClose, on
       });
       for (const mesh of targets) {
         const region = regionOf(mesh);
-        if (region) setTouched((t) => (settings.current.erase ? t : { ...t, [region]: (t[region] ?? 0) + 1 }));
+        if (!region) continue;
+        const paint = settings.current;
+        setTouched((current) => {
+          if (paint.erase) {
+            const weight = (current[region]?.weight ?? 0) - 1;
+            if (weight > 0) return { ...current, [region]: { ...current[region], weight } };
+            const { [region]: _removed, ...rest } = current;
+            return rest;
+          }
+          return { ...current, [region]: { weight: (current[region]?.weight ?? 0) + 1, color: paint.brushColor } };
+        });
       }
       state.last = point.clone();
     }
@@ -199,7 +205,6 @@ export default function BodyStudio({ color = '#c4623f', focusRegion, onClose, on
       const hit = pick(event);
       if (!state.painting) {
         controls.enableRotate = state.altOrbit || !hit;
-        setHovered(hit ? regionOf(hit.object) : '');
         if (hit) prepare(hit.object as THREE.Mesh);
       }
       if (hit) {
@@ -358,7 +363,10 @@ export default function BodyStudio({ color = '#c4623f', focusRegion, onClose, on
     engine.current?.load(FIGURES.find((f) => f.id === id)!.src, focusRegion);
   }, [focusRegion]);
 
-  const dominant = Object.entries(touched).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+  const drawnRegions = Object.keys(touched);
+  const dominant = Object.entries(touched).sort((a, b) => b[1].weight - a[1].weight)[0]?.[0] ?? '';
+
+  useEffect(() => { onRegionsChange?.(touched); }, [touched, onRegionsChange]);
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -379,9 +387,7 @@ export default function BodyStudio({ color = '#c4623f', focusRegion, onClose, on
       <div className="studio-stage">
         <div ref={holderRef} className="studio-canvas-holder" />
         {!ready && <p className="studio-loading">Preparing the body…</p>}
-        <p className="studio-hint">
-          {hovered ? <><strong>{REGION_LABEL[hovered] ?? hovered}</strong> · drag to draw</> : 'Drag on the body to draw · drag beside it to turn'}
-        </p>
+        <p className="studio-hint">Drag on the body to draw · drag beside it to turn</p>
       </div>
 
       <div className="studio-tools">
@@ -417,14 +423,14 @@ export default function BodyStudio({ color = '#c4623f', focusRegion, onClose, on
 
       <footer className="studio-foot">
         <p className="caption">
-          {dominant ? <>Mostly your <strong>{(REGION_LABEL[dominant] ?? dominant).toLowerCase()}</strong>. Saving will place a mark there.</>
+          {drawnRegions.length
+            ? 'Your body map is following along. Close when it looks right.'
             : 'Nothing drawn yet. Anything you draw stays on this device.'}
         </p>
         <div className="studio-actions">
-          <button className="button button-secondary" onClick={() => onDone(null)}>Not now</button>
-          <button className="button button-primary" disabled={!dominant}
+          <button className="button button-primary"
             onClick={() => onDone(dominant ? { region: dominant, color: brushColor } : null)}>
-            Save this place
+            Done
           </button>
         </div>
       </footer>

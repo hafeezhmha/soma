@@ -47,3 +47,8 @@ button.soma-map__mark-label:hover { background: var(--surface); }
   .soma-map__figure { width: min(100%, 190px); margin-top: 12px; }
   .soma-map__hint { margin-top: 12px; }
 }
+
+/* Marks read as colour on the body, not as a list of body-part names. */
+.soma-map__mark-label--dot { min-width: 44px; padding: 0; justify-content: center; }
+.soma-map__mark-label--dot .soma-map__swatch { width: 11px; height: 11px; }
+.soma-map__mark-label--dot.soma-map__mark-label--selected .soma-map__swatch { outline: 1px solid var(--ink); outline-offset: 2px; }
